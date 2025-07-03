@@ -13,6 +13,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from "lucide-react";
+import { NewTaskDialog } from "./NewTaskDialog";
 
 const mockTasks = [
   {
@@ -77,6 +78,11 @@ const statusColors: Record<string, string> = {
 export const TasksManager = () => {
   const [tasks, setTasks] = useState(mockTasks);
   const [filter, setFilter] = useState("all");
+
+  const handleCreateTask = (newTask: any) => {
+    setTasks(prev => [...prev, newTask]);
+    console.log("Tarefa adicionada:", newTask);
+  };
 
   const toggleTaskCompletion = (taskId: number) => {
     setTasks(tasks.map(task => 
@@ -193,10 +199,7 @@ export const TasksManager = () => {
           </Button>
         </div>
 
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Tarefa
-        </Button>
+        <NewTaskDialog onCreateTask={handleCreateTask} />
       </div>
 
       {/* Tasks List */}
@@ -274,10 +277,15 @@ export const TasksManager = () => {
               : "Comece criando sua primeira tarefa"
             }
           </p>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Tarefa
-          </Button>
+          <NewTaskDialog 
+            onCreateTask={handleCreateTask}
+            trigger={
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Tarefa
+              </Button>
+            }
+          />
         </div>
       )}
     </div>
