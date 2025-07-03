@@ -1,8 +1,10 @@
+
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { UserDropdown } from "./UserDropdown";
 import { GlobalSearch } from "./GlobalSearch";
+import { NewLeadDialog } from "./NewLeadDialog";
 
 interface HeaderProps {
   activeModule: string;
@@ -58,15 +60,7 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
         <div className="flex items-center space-x-4">
           <GlobalSearch />
 
-          {/* O botão agora é renderizado pelo próprio NewLeadDialog */}
-          <Button 
-            size="sm" 
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            onClick={() => console.log("Este botão será substituído pelo NewLeadDialog")}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Lead
-          </Button>
+          <NewLeadDialog />
 
           <NotificationsDropdown />
 
@@ -76,3 +70,4 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
     </header>
   );
 };
+
