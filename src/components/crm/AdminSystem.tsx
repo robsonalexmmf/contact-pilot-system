@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +20,11 @@ import {
 import { useSystemMetrics } from "@/hooks/useSystemMetrics";
 import { useState } from "react";
 
-export const AdminSystem = () => {
+interface AdminSystemProps {
+  setActiveModule?: (module: string) => void;
+}
+
+export const AdminSystem = ({ setActiveModule }: AdminSystemProps) => {
   const { metrics, services, events, loading, refreshMetrics } = useSystemMetrics();
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -57,10 +60,18 @@ export const AdminSystem = () => {
   };
 
   const handleSettings = () => {
-    toast({
-      title: "Configurações",
-      description: "Abrindo painel de configurações do sistema...",
-    });
+    if (setActiveModule) {
+      setActiveModule('admin-settings');
+      toast({
+        title: "Configurações",
+        description: "Abrindo configurações do sistema...",
+      });
+    } else {
+      toast({
+        title: "Configurações",
+        description: "Redirecionando para configurações do sistema...",
+      });
+    }
   };
 
   const handleServiceAction = (serviceName: string) => {

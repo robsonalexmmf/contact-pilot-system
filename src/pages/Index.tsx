@@ -142,7 +142,7 @@ const Index = () => {
         case "admin-users":
           return <AdminUserManagement />;
         case "admin-system":
-          return <AdminSystem />;
+          return <AdminSystem setActiveModule={setActiveModule} />;
         case "admin-monitoring":
           return <AdminMonitoring />;
         case "admin-billing":
