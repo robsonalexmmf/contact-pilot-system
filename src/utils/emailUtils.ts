@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for email integration
  */
@@ -16,7 +15,16 @@ export const openEmailClient = (
   
   const mailtoUrl = `mailto:${to}?subject=${encodedSubject}&body=${encodedBody}`;
   console.log(`Abrindo cliente de email para: ${to}`);
-  window.location.href = mailtoUrl;
+  console.log(`URL do mailto: ${mailtoUrl}`);
+  
+  // Tentar abrir o cliente de email
+  try {
+    window.open(mailtoUrl, '_blank');
+  } catch (error) {
+    console.error('Erro ao abrir cliente de email:', error);
+    // Fallback usando window.location
+    window.location.href = mailtoUrl;
+  }
 };
 
 /**

@@ -96,9 +96,13 @@ export const LeadsManager = () => {
   const handleEmailLead = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     if (lead?.email) {
+      console.log(`Preparando email para ${lead.name} - ${lead.email}`);
       const template = emailTemplates.leadContact(lead.name, lead.company);
+      console.log('Template gerado:', template);
       openEmailClient(lead.email, template.subject, template.body);
-      console.log(`Abrindo email para ${lead.name} - ${lead.email}`);
+    } else {
+      console.error('Lead não encontrado ou email não disponível');
+      alert('Email não disponível para este lead');
     }
   };
 
