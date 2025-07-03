@@ -23,11 +23,13 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinancialData } from "@/hooks/useFinancialData";
+import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 
 export const AdminBilling = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
   const { toast } = useToast();
 
   const { metrics, transactions, revenueData, loading, refreshData } = useFinancialData();
@@ -45,39 +47,208 @@ export const AdminBilling = () => {
   };
 
   const handleExport = () => {
-    const csvContent = [
-      ['Nome', 'Email', 'Plano', 'Valor', 'Status', 'Data', 'Método'].join(','),
-      ...filteredTransactions.map(t => 
-        [t.user_name, t.user_email, t.plan, t.amount, getStatusText(t.status), t.date, t.method].join(',')
-      )
-    ].join('\n');
+    try {
+      // Create CSV content
+      const headers = ['Nome', 'Email', 'Plano', 'Valor', 'Status', 'Data', 'Método', 'Descrição'];
+      const csvRows = [
+        headers.join(','),
+        ...filteredTransactions.map(t => [
+          `"${t.user_name}"`,
+          `"${t.user_email}"`,
+          `"${t.plan}"`,
+          t.amount.toFixed(2),
+          `"${getStatusText(t.status)}"`,
+          `"${t.date}"`,
+          `"${t.method}"`,
+          `"${t.description}"`
+        ].join(','))
+      ];
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `faturamento_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `faturamento_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
 
-    toast({
-      title: "Exportação Concluída",
-      description: "Relatório de faturamento exportado com sucesso!",
-    });
+      toast({
+        title: "Exportação Concluída",
+        description: `Relatório com ${filteredTransactions.length} transações exportado com sucesso!`,
+      });
+    } catch (error) {
+      console.error('Erro na exportação:', error);
+      toast({
+        title: "Erro na Exportação",
+        description: "Não foi possível exportar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleGenerateReport = () => {
-    toast({
-      title: "Relatório Gerado",
-      description: "Relatório detalhado de faturamento está sendo gerado...",
-    });
+    try {
+      // Calculate totals for the report
+      const totalReceitas = filteredTransactions
+        .filter(t => t.status === 'paid')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const totalTransactions = filteredTransactions.length;
+      const pendingTransactions = filteredTransactions.filter(t => t.status === 'pending').length;
+      const failedTransactions = filteredTransactions.filter(t => t.status === 'failed').length;
+
+      // Group by plan
+      const planStats = filteredTransactions.reduce((acc, t) => {
+        if (!acc[t.plan]) acc[t.plan] = { count: 0, revenue: 0 };
+        acc[t.plan].count++;
+        if (t.status === 'paid') acc[t.plan].revenue += t.amount;
+        return acc;
+      }, {});
+
+      // Create HTML report
+      const reportHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Relatório de Faturamento - ${new Date().toLocaleDateString('pt-BR')}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .summary { background: #f8f9fa; padding: 20px; margin-bottom: 30px; border-radius: 8px; }
+            .summary h2 { color: #495057; margin-top: 0; }
+            .metric { display: inline-block; margin: 10px 20px; text-align: center; }
+            .metric-value { font-size: 24px; font-weight: bold; color: #28a745; }
+            .metric-label { font-size: 14px; color: #6c757d; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+            th { background-color: #f8f9fa; font-weight: bold; }
+            .status-paid { color: #28a745; font-weight: bold; }
+            .status-pending { color: #ffc107; font-weight: bold; }
+            .status-failed { color: #dc3545; font-weight: bold; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6c757d; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Relatório de Faturamento</h1>
+            <p>Período: ${new Date().toLocaleDateString('pt-BR')} | Total de Transações: ${totalTransactions}</p>
+          </div>
+          
+          <div class="summary">
+            <h2>Resumo Executivo</h2>
+            <div class="metric">
+              <div class="metric-value">R$ ${totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+              <div class="metric-label">Receita Total</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">${totalTransactions}</div>
+              <div class="metric-label">Total Transações</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">${pendingTransactions}</div>
+              <div class="metric-label">Pendentes</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">${failedTransactions}</div>
+              <div class="metric-label">Falharam</div>
+            </div>
+          </div>
+
+          <h2>Estatísticas por Plano</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Plano</th>
+                <th>Quantidade</th>
+                <th>Receita</th>
+                <th>Ticket Médio</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(planStats).map(([plan, stats]) => `
+                <tr>
+                  <td>${plan}</td>
+                  <td>${stats.count}</td>
+                  <td>R$ ${stats.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td>R$ ${(stats.revenue / stats.count).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <h2>Transações Detalhadas</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Email</th>
+                <th>Plano</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Método</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredTransactions.map(t => `
+                <tr>
+                  <td>${t.date}</td>
+                  <td>${t.user_name}</td>
+                  <td>${t.user_email}</td>
+                  <td>${t.plan}</td>
+                  <td>R$ ${t.amount.toFixed(2)}</td>
+                  <td class="status-${t.status}">${getStatusText(t.status)}</td>
+                  <td>${t.method}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>Relatório gerado automaticamente em ${new Date().toLocaleString('pt-BR')}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Download the report
+      const blob = new Blob([reportHTML], { type: 'text/html;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `relatorio-faturamento-${new Date().toISOString().split('T')[0]}.html`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Relatório Gerado",
+        description: "Relatório detalhado de faturamento foi baixado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      toast({
+        title: "Erro no Relatório",
+        description: "Não foi possível gerar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleViewTransaction = (transactionId: string) => {
-    toast({
-      title: "Detalhes da Transação",
-      description: `Visualizando detalhes da transação ${transactionId}`,
-    });
+  const handleViewTransaction = (transaction) => {
+    console.log('Visualizando transação:', transaction);
+    setSelectedTransaction(transaction);
   };
 
   const filteredTransactions = transactions.filter(transaction => {
@@ -374,7 +545,7 @@ export const AdminBilling = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => handleViewTransaction(transaction.id)}
+                      onClick={() => handleViewTransaction(transaction)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -385,6 +556,15 @@ export const AdminBilling = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Transaction Details Dialog */}
+      {selectedTransaction && (
+        <TransactionDetailsDialog
+          transaction={selectedTransaction}
+          isOpen={!!selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+        />
+      )}
     </div>
   );
 };
