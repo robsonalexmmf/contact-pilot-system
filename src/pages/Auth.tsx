@@ -15,6 +15,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [shouldRedirectToPayment, setShouldRedirectToPayment] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -24,19 +25,27 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      // Se usuário está logado e há plano selecionado, processar pagamento
-      if (selectedPlan) {
+      console.log('Usuário autenticado:', user.email);
+      
+      // Se há plano selecionado e deve redirecionar para pagamento
+      if (selectedPlan && shouldRedirectToPayment) {
+        console.log('Redirecionando para pagamento após cadastro...');
+        handlePaymentRedirect();
+      } else if (selectedPlan && !shouldRedirectToPayment) {
+        // Se já estava logado e há plano selecionado
+        console.log('Usuário já logado, redirecionando para pagamento...');
         handlePaymentRedirect();
       } else {
+        // Se não há plano, vai para o app
         navigate('/app');
       }
     }
-  }, [user, navigate, selectedPlan]);
+  }, [user, selectedPlan, shouldRedirectToPayment]);
 
   const handlePaymentRedirect = async () => {
     if (!user || !selectedPlan) return;
     
-    console.log('Redirecionando para pagamento...', { user: user.email, plan: selectedPlan });
+    console.log('Processando redirecionamento para pagamento...', { user: user.email, plan: selectedPlan });
     
     try {
       const { createPayment, getPaymentAmount } = await import('@/services/mercadoPagoService');
@@ -141,18 +150,20 @@ export default function Auth() {
         });
       }
     } else {
+      console.log('Cadastro realizado com sucesso');
+      
+      // Marcar que deve redirecionar para pagamento após autenticação
+      if (selectedPlan) {
+        setShouldRedirectToPayment(true);
+        console.log('Marcado para redirecionar para pagamento');
+      }
+      
       toast({
         title: "Cadastro realizado!",
         description: selectedPlan 
           ? "Aguarde, redirecionando para o pagamento..."
           : "Verifique seu email para confirmar a conta antes de continuar."
       });
-      
-      // Se há plano selecionado, aguardar um momento para o usuário ser autenticado
-      // O useEffect acima cuidará do redirecionamento
-      if (selectedPlan) {
-        console.log('Cadastro realizado, aguardando autenticação para redirecionar...');
-      }
     }
     
     setIsLoading(false);
