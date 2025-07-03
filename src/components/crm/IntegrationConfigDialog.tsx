@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +20,8 @@ import {
   Slack,
   Save,
   Trash2,
-  Plus
+  Plus,
+  Globe
 } from "lucide-react";
 
 interface Integration {
@@ -97,17 +97,70 @@ export const IntegrationConfigDialog = ({ open, onClose }: IntegrationConfigDial
 
   const [editingIntegration, setEditingIntegration] = useState<string | null>(null);
 
-  // Carregar configurações salvas
-  useState(() => {
+  // Carregar configurações salvas e integrações do admin
+  useEffect(() => {
+    // Carregar configurações locais do usuário
     const saved = localStorage.getItem('integration_configs');
     if (saved) {
       try {
-        setIntegrations(JSON.parse(saved));
+        setIntegrations(prev => {
+          const savedIntegrations = JSON.parse(saved);
+          return prev.map(integration => {
+            const savedIntegration = savedIntegrations.find((s: Integration) => s.id === integration.id);
+            return savedIntegration || integration;
+          });
+        });
       } catch (error) {
         console.error("Erro ao carregar integrações:", error);
       }
     }
-  });
+
+    // Carregar integrações administrativas
+    const adminIntegrations = localStorage.getItem('admin_integrations');
+    if (adminIntegrations) {
+      try {
+        const adminInts = JSON.parse(adminIntegrations);
+        console.log('Integrações administrativas carregadas:', adminInts);
+        
+        // Adicionar integrações administrativas à lista
+        setIntegrations(prev => {
+          const newIntegrations = [...prev];
+          
+          adminInts.forEach((adminInt: any) => {
+            // Verificar se já existe
+            const existingIndex = newIntegrations.findIndex(int => int.id === adminInt.id);
+            
+            if (existingIndex === -1) {
+              // Adicionar nova integração do admin
+              newIntegrations.push({
+                id: adminInt.id,
+                name: adminInt.name,
+                description: `${adminInt.description} (Configuração Global)`,
+                icon: <Globe className="w-5 h-5" />,
+                enabled: adminInt.enabled,
+                webhookUrl: adminInt.webhookUrl,
+                apiKey: adminInt.apiKey,
+                category: adminInt.category
+              });
+            } else {
+              // Atualizar integração existente com dados do admin
+              newIntegrations[existingIndex] = {
+                ...newIntegrations[existingIndex],
+                webhookUrl: adminInt.webhookUrl,
+                apiKey: adminInt.apiKey,
+                enabled: adminInt.enabled,
+                description: `${newIntegrations[existingIndex].description} (Configuração Global)`
+              };
+            }
+          });
+          
+          return newIntegrations;
+        });
+      } catch (error) {
+        console.error("Erro ao carregar integrações administrativas:", error);
+      }
+    }
+  }, [open]); // Recarregar quando o dialog abrir
 
   const handleToggleIntegration = (id: string) => {
     setIntegrations(prev => 

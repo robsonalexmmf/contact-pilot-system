@@ -39,6 +39,11 @@ import { AdminUserManagement } from "@/components/crm/AdminUserManagement";
 import { AdminSystem } from "@/components/crm/AdminSystem";
 import { AdminMonitoring } from "@/components/crm/AdminMonitoring";
 import { AdminBilling } from "@/components/crm/AdminBilling";
+import { AdminNotifications } from "@/components/crm/AdminNotifications";
+import { AdminSecurity } from "@/components/crm/AdminSecurity";
+import { AdminLogs } from "@/components/crm/AdminLogs";
+import { AdminIntegrations } from "@/components/crm/AdminIntegrations";
+import { AdminSettings } from "@/components/crm/AdminSettings";
 import { isAdminUser } from "@/utils/testUsers";
 import { AdminSidebar } from "@/components/crm/AdminSidebar";
 import { AdminHeader } from "@/components/crm/AdminHeader";
@@ -144,15 +149,15 @@ const Index = () => {
         case "admin-reports":
           return <div className="p-6"><h2 className="text-2xl font-bold">Relatórios Admin</h2><p>Módulo em desenvolvimento</p></div>;
         case "admin-notifications":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Notificações</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminNotifications />;
         case "admin-security":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Segurança</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminSecurity />;
         case "admin-logs":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Logs do Sistema</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminLogs />;
         case "admin-integrations":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Integrações</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminIntegrations />;
         case "admin-settings":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Configurações</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminSettings />;
         default:
           return <AdminDashboard />;
       }
