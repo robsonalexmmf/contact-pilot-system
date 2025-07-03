@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -43,44 +44,33 @@ interface UserGrowthData {
   receita: number;
 }
 
-interface PlanDistributionData {
+interface SystemMetric {
   name: string;
   value: number;
-  color: string;
-  percentage: number;
+  status: 'success' | 'warning' | 'error';
 }
 
-interface SystemAlert {
-  id: number;
-  type: string;
-  message: string;
-  priority: string;
-  time: string;
-}
-
-interface RecentUser {
+interface RecentActivity {
   id: string;
-  name: string;
-  email: string;
-  plan: string;
-  status: string;
-  joined: string;
+  type: string;
+  description: string;
+  timestamp: string;
+  user?: string;
 }
 
 export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
   const [adminKpiData, setAdminKpiData] = useState<AdminKPIData[]>([]);
   const [userGrowthData, setUserGrowthData] = useState<UserGrowthData[]>([]);
-  const [planDistributionData, setPlanDistributionData] = useState<PlanDistributionData[]>([]);
-  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
-  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchRealTimeData = async () => {
+  const fetchDashboardData = async () => {
     try {
-      console.log('Buscando dados em tempo real do Supabase...');
+      console.log('Carregando dados do dashboard administrativo...');
       
-      // Buscar dados das tabelas
+      // Buscar dados das tabelas principais
       const [profilesData, leadsData, dealsData, transactionsData, automationsData] = await Promise.all([
         supabase.from('profiles').select('*'),
         supabase.from('leads').select('*'),
@@ -95,56 +85,44 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
       const transactions = transactionsData.data || [];
       const automations = automationsData.data || [];
 
-      console.log('Dados capturados:', {
-        profiles: profiles.length,
-        leads: leads.length,
-        deals: deals.length,
-        transactions: transactions.length,
-        automations: automations.length
-      });
-
-      // Calcular KPIs baseados em dados reais
+      // Calcular KPIs
       const totalUsers = profiles.length;
-      const premiumUsers = profiles.filter(p => p.plan === 'Premium' || p.plan === 'Enterprise').length;
+      const activeUsers = profiles.filter(p => p.status === 'Ativo').length;
       const totalRevenue = transactions
         .filter(t => t.type === 'receita' && t.status === 'Pago')
-        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-      const systemUptime = automations.filter(a => a.status === 'Ativo').length > 0 ? 99.8 : 95.2;
-
-      // Calcular crescimento (comparar com mês anterior simulado)
-      const userGrowth = totalUsers > 0 ? Math.floor((totalUsers / Math.max(totalUsers - 5, 1)) * 100 - 100) : 0;
-      const revenueGrowth = totalRevenue > 0 ? Math.floor(Math.random() * 30 + 10) : 0;
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const activeDeals = deals.filter(d => d.stage !== 'lost' && d.stage !== 'won').length;
 
       const kpiData: AdminKPIData[] = [
         { 
           icon: Users, 
-          title: "Usuários Ativos", 
+          title: "Usuários Totais", 
           value: totalUsers.toString(), 
-          change: `+${userGrowth}%`, 
+          change: "+12%", 
           trend: "up", 
           color: "text-blue-600" 
         },
         { 
           icon: Shield, 
-          title: "Contas Premium", 
-          value: premiumUsers.toString(), 
-          change: `+${Math.floor(premiumUsers / Math.max(totalUsers, 1) * 100)}%`, 
-          trend: "up", 
-          color: "text-purple-600" 
-        },
-        { 
-          icon: DollarSign, 
-          title: "Receita Mensal", 
-          value: `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 
-          change: `+${revenueGrowth}%`, 
+          title: "Usuários Ativos", 
+          value: activeUsers.toString(), 
+          change: "+8%", 
           trend: "up", 
           color: "text-green-600" 
         },
         { 
-          icon: Server, 
-          title: "Uptime do Sistema", 
-          value: `${systemUptime}%`, 
-          change: "+0.2%", 
+          icon: DollarSign, 
+          title: "Receita Total", 
+          value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, 
+          change: "+25%", 
+          trend: "up", 
+          color: "text-purple-600" 
+        },
+        { 
+          icon: TrendingUp, 
+          title: "Negócios Ativos", 
+          value: activeDeals.toString(), 
+          change: "+15%", 
           trend: "up", 
           color: "text-orange-600" 
         },
@@ -152,104 +130,46 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
 
       setAdminKpiData(kpiData);
 
-      // Gerar dados de crescimento baseados em dados reais
-      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
-      const growthData: UserGrowthData[] = months.map((month, index) => {
-        const factor = (index + 1) / 6;
-        return {
-          month,
-          usuarios: Math.floor(totalUsers * factor),
-          premium: Math.floor(premiumUsers * factor),
-          receita: Math.floor(totalRevenue * factor)
-        };
-      });
+      // Dados de crescimento (últimos 6 meses)
+      const growthData: UserGrowthData[] = [
+        { month: 'Jan', usuarios: Math.floor(totalUsers * 0.6), premium: Math.floor(activeUsers * 0.5), receita: Math.floor(totalRevenue * 0.4) },
+        { month: 'Fev', usuarios: Math.floor(totalUsers * 0.7), premium: Math.floor(activeUsers * 0.6), receita: Math.floor(totalRevenue * 0.5) },
+        { month: 'Mar', usuarios: Math.floor(totalUsers * 0.8), premium: Math.floor(activeUsers * 0.7), receita: Math.floor(totalRevenue * 0.6) },
+        { month: 'Abr', usuarios: Math.floor(totalUsers * 0.85), premium: Math.floor(activeUsers * 0.8), receita: Math.floor(totalRevenue * 0.75) },
+        { month: 'Mai', usuarios: Math.floor(totalUsers * 0.92), premium: Math.floor(activeUsers * 0.9), receita: Math.floor(totalRevenue * 0.85) },
+        { month: 'Jun', usuarios: totalUsers, premium: activeUsers, receita: totalRevenue }
+      ];
 
       setUserGrowthData(growthData);
 
-      // Distribuição de planos baseada em dados reais
-      const planCounts = profiles.reduce((acc, profile) => {
-        const plan = profile.plan || 'Free';
-        acc[plan] = (acc[plan] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const planDistribution: PlanDistributionData[] = [
-        { 
-          name: 'Free', 
-          value: planCounts.Free || 0, 
-          color: '#94A3B8',
-          percentage: totalUsers > 0 ? Math.round((planCounts.Free || 0) / totalUsers * 100) : 0
-        },
-        { 
-          name: 'Pro', 
-          value: planCounts.Pro || 0, 
-          color: '#3B82F6',
-          percentage: totalUsers > 0 ? Math.round((planCounts.Pro || 0) / totalUsers * 100) : 0
-        },
-        { 
-          name: 'Premium', 
-          value: planCounts.Premium || 0, 
-          color: '#8B5CF6',
-          percentage: totalUsers > 0 ? Math.round((planCounts.Premium || 0) / totalUsers * 100) : 0
-        }
+      // Métricas do sistema
+      const metrics: SystemMetric[] = [
+        { name: 'CPU Usage', value: 45, status: 'success' },
+        { name: 'Memory Usage', value: 62, status: 'warning' },
+        { name: 'Database Performance', value: 88, status: 'success' },
+        { name: 'API Response Time', value: 95, status: 'success' },
+        { name: 'Storage Usage', value: 34, status: 'success' },
+        { name: 'Active Connections', value: 156, status: 'success' }
       ];
 
-      setPlanDistributionData(planDistribution);
+      setSystemMetrics(metrics);
 
-      // Alertas baseados em dados reais
-      const alerts: SystemAlert[] = [
-        ...(totalUsers === 0 ? [{
-          id: 1,
-          type: "warning",
-          message: "Nenhum usuário registrado no sistema",
-          priority: "high",
-          time: "agora"
-        }] : []),
-        ...(automations.filter(a => a.status === 'Ativo').length === 0 ? [{
-          id: 2,
-          type: "error",
-          message: "Nenhuma automação ativa no sistema",
-          priority: "medium",
-          time: "5 min atrás"
-        }] : []),
-        ...(leads.length < 5 ? [{
-          id: 3,
-          type: "info",
-          message: `Apenas ${leads.length} leads cadastradas`,
-          priority: "low",
-          time: "15 min atrás"
-        }] : []),
-        {
-          id: 4,
-          type: "success",
-          message: "Sistema funcionando normalmente",
-          priority: "low",
-          time: "1h atrás"
-        }
+      // Atividades recentes
+      const activities: RecentActivity[] = [
+        { id: '1', type: 'user_signup', description: 'Novo usuário cadastrado', timestamp: '2 min atrás', user: 'João Silva' },
+        { id: '2', type: 'deal_closed', description: 'Negócio fechado no valor de R$ 5.000', timestamp: '5 min atrás', user: 'Maria Santos' },
+        { id: '3', type: 'lead_imported', description: '50 novos leads importados', timestamp: '12 min atrás', user: 'Pedro Costa' },
+        { id: '4', type: 'automation_triggered', description: 'Automação de e-mail executada', timestamp: '15 min atrás' },
+        { id: '5', type: 'system_backup', description: 'Backup do sistema concluído', timestamp: '1 hora atrás' }
       ];
 
-      setSystemAlerts(alerts);
-
-      // Usuários recentes baseados em dados reais
-      const recentUsersData: RecentUser[] = profiles
-        .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
-        .slice(0, 4)
-        .map(profile => ({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          plan: profile.plan || 'free',
-          status: profile.status === 'Ativo' ? 'active' : 'inactive',
-          joined: new Date(profile.created_at || '').toLocaleDateString('pt-BR')
-        }));
-
-      setRecentUsers(recentUsersData);
+      setRecentActivities(activities);
       setLoading(false);
 
-      console.log('Dashboard atualizado com dados reais');
+      console.log('Dashboard administrativo carregado com sucesso');
 
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('Erro ao carregar dashboard:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados do dashboard",
@@ -260,42 +180,12 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
   };
 
   useEffect(() => {
-    fetchRealTimeData();
-
+    fetchDashboardData();
+    
     // Atualizar dados a cada 30 segundos
-    const interval = setInterval(fetchRealTimeData, 30000);
-
-    // Configurar real-time listeners
-    const profilesChannel = supabase
-      .channel('profiles-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        console.log('Mudança detectada em profiles, atualizando dashboard...');
-        fetchRealTimeData();
-      })
-      .subscribe();
-
-    const leadsChannel = supabase
-      .channel('leads-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        console.log('Mudança detectada em leads, atualizando dashboard...');
-        fetchRealTimeData();
-      })
-      .subscribe();
-
-    const transactionsChannel = supabase
-      .channel('transactions-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
-        console.log('Mudança detectada em transactions, atualizando dashboard...');
-        fetchRealTimeData();
-      })
-      .subscribe();
-
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(profilesChannel);
-      supabase.removeChannel(leadsChannel);
-      supabase.removeChannel(transactionsChannel);
-    };
+    const interval = setInterval(fetchDashboardData, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleSettingsClick = () => {
@@ -319,51 +209,24 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'low': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'inactive': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPlanColor = (plan: string) => {
-    switch (plan) {
-      case 'premium': return 'bg-purple-100 text-purple-800';
-      case 'pro': return 'bg-blue-100 text-blue-800';
-      case 'free': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Carregando dados em tempo real...</p>
+          <p>Carregando dashboard administrativo...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Admin Header */}
+    <div className="space-y-6 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard Administrativo</h1>
-          <p className="text-gray-600 dark:text-gray-400">Dados em tempo real do sistema</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard Administrativo</h1>
+          <p className="text-gray-600 dark:text-gray-400">Visão geral completa do sistema</p>
         </div>
         <div className="flex space-x-2">
           <Button 
@@ -395,12 +258,12 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
         </div>
       </div>
 
-      {/* Admin KPIs */}
+      {/* KPIs Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {adminKpiData.map((kpi, index) => {
           const Icon = kpi.icon;
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={index} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -419,7 +282,7 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
                       <span className={`text-sm ${kpi.trend === "up" ? "text-green-600" : "text-red-600"}`}>
                         {kpi.change}
                       </span>
-                      <span className="text-sm text-gray-500 ml-1">vs. período anterior</span>
+                      <span className="text-sm text-gray-500 ml-1">vs. mês anterior</span>
                     </div>
                   </div>
                   <div className={`p-3 rounded-full bg-gray-100 dark:bg-gray-700 ${kpi.color}`}>
@@ -433,12 +296,12 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* User Growth Chart */}
+        {/* Gráfico de Crescimento */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="w-5 h-5 mr-2" />
-              Crescimento de Usuários e Receita
+              Crescimento dos Últimos 6 Meses
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -447,57 +310,38 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip 
-                  formatter={(value, name) => [
-                    name === 'receita' ? `R$ ${value.toLocaleString()}` : value,
-                    name === 'usuarios' ? 'Usuários' : name === 'premium' ? 'Premium' : 'Receita'
-                  ]}
-                />
-                <Line type="monotone" dataKey="usuarios" stroke="#3B82F6" strokeWidth={3} />
-                <Line type="monotone" dataKey="premium" stroke="#8B5CF6" strokeWidth={2} />
-                <Line type="monotone" dataKey="receita" stroke="#10B981" strokeWidth={2} />
+                <Tooltip />
+                <Line type="monotone" dataKey="usuarios" stroke="#3B82F6" strokeWidth={3} name="Usuários" />
+                <Line type="monotone" dataKey="premium" stroke="#8B5CF6" strokeWidth={2} name="Premium" />
+                <Line type="monotone" dataKey="receita" stroke="#10B981" strokeWidth={2} name="Receita" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Plan Distribution */}
+        {/* Métricas do Sistema */}
         <Card>
           <CardHeader>
-            <CardTitle>Distribuição de Planos</CardTitle>
+            <CardTitle className="flex items-center">
+              <Server className="w-5 h-5 mr-2" />
+              Métricas do Sistema
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={planDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  dataKey="value"
-                >
-                  {planDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-4 space-y-2">
-              {planDistributionData.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2" 
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
+            <div className="space-y-4">
+              {systemMetrics.map((metric, index) => (
+                <div key={index}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>{metric.name}</span>
+                    <span>{metric.value}{metric.name.includes('Usage') ? '%' : ''}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">{item.value}</span>
-                    <span className="text-xs text-gray-500">({item.percentage}%)</span>
-                  </div>
+                  <Progress 
+                    value={metric.value} 
+                    className={`h-2 ${
+                      metric.status === 'success' ? 'text-green-600' : 
+                      metric.status === 'warning' ? 'text-yellow-600' : 'text-red-600'
+                    }`}
+                  />
                 </div>
               ))}
             </div>
@@ -506,34 +350,25 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* System Alerts */}
+        {/* Atividades Recentes */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2" />
-                Alertas do Sistema
-              </div>
-              <Badge variant="secondary">{systemAlerts.length} alertas</Badge>
+            <CardTitle className="flex items-center">
+              <Activity className="w-5 h-5 mr-2" />
+              Atividades Recentes
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {systemAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    alert.type === 'error' ? 'bg-red-500' : 
-                    alert.type === 'warning' ? 'bg-yellow-500' : 
-                    alert.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                  }`} />
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
                   <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-900 dark:text-white">{alert.message}</p>
-                      <Badge className={`text-xs ${getPriorityColor(alert.priority)}`}>
-                        {alert.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{alert.time}</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{activity.description}</p>
+                    {activity.user && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">por {activity.user}</p>
+                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{activity.timestamp}</p>
                   </div>
                 </div>
               ))}
@@ -541,83 +376,55 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
           </CardContent>
         </Card>
 
-        {/* Recent Users */}
+        {/* Status dos Serviços */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Users className="w-5 h-5 mr-2" />
-              Usuários Recentes
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Status dos Serviços
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getPlanColor(user.plan)}>
-                      {user.plan.toUpperCase()}
-                    </Badge>
-                    <Badge className={getStatusColor(user.status)}>
-                      {user.status}
-                    </Badge>
-                  </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-green-900">API Principal</p>
+                  <p className="text-xs text-green-700">Operacional</p>
                 </div>
-              ))}
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-green-900">Banco de Dados</p>
+                  <p className="text-xs text-green-700">Operacional</p>
+                </div>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-green-900">Automações</p>
+                  <p className="text-xs text-green-700">Operacional</p>
+                </div>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-yellow-900">Backup System</p>
+                  <p className="text-xs text-yellow-700">Manutenção</p>
+                </div>
+                <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* System Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Activity className="w-5 h-5 mr-2" />
-            Status dos Serviços
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-green-900">API Principal</p>
-                <p className="text-xs text-green-700">Funcionando</p>
-              </div>
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-green-900">Banco de Dados</p>
-                <p className="text-xs text-green-700">Funcionando</p>
-              </div>
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-green-900">Automações</p>
-                <p className="text-xs text-green-700">Funcionando</p>
-              </div>
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-green-900">Integrações</p>
-                <p className="text-xs text-green-700">Funcionando</p>
-              </div>
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Refresh Button */}
+      <div className="flex justify-center">
+        <Button onClick={fetchDashboardData} variant="outline">
+          Atualizar Dados
+        </Button>
+      </div>
     </div>
   );
 };

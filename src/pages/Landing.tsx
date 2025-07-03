@@ -1,5 +1,6 @@
+
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Target, TrendingUp, Shield, Check } from "lucide-react";
+import { ArrowRight, Users, Target, TrendingUp, Shield, Check, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Landing() {
@@ -78,7 +79,7 @@ export default function Landing() {
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-2">Free</h3>
               <div className="text-4xl font-bold text-blue-600 mb-2">R$ 0</div>
-              <p className="text-gray-600">Para começar</p>
+              <p className="text-gray-600">Para começar - 2 dias</p>
             </div>
             
             <ul className="space-y-4 mb-8">
@@ -96,7 +97,7 @@ export default function Landing() {
               </li>
               <li className="flex items-center">
                 <Check className="h-5 w-5 text-green-500 mr-3" />
-                <span>2 dias de teste</span>
+                <span>Sem automações</span>
               </li>
               <li className="flex items-center">
                 <Check className="h-5 w-5 text-green-500 mr-3" />
@@ -217,6 +218,82 @@ export default function Landing() {
           </Link>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* Logo e Descrição */}
+            <div className="md:col-span-1">
+              <div className="text-2xl font-bold text-blue-400 mb-4">Salesin Pro</div>
+              <p className="text-gray-400 mb-4">
+                A plataforma de CRM mais completa para impulsionar suas vendas e automatizar seus processos.
+              </p>
+              <div className="flex space-x-4">
+                <Facebook className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+                <Twitter className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+                <Instagram className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+                <Linkedin className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+              </div>
+            </div>
+
+            {/* Produto */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Produto</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white">Funcionalidades</a></li>
+                <li><a href="#" className="hover:text-white">Preços</a></li>
+                <li><a href="#" className="hover:text-white">Integrações</a></li>
+                <li><a href="#" className="hover:text-white">API</a></li>
+                <li><a href="#" className="hover:text-white">Segurança</a></li>
+              </ul>
+            </div>
+
+            {/* Suporte */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Suporte</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white">Central de Ajuda</a></li>
+                <li><a href="#" className="hover:text-white">Documentação</a></li>
+                <li><a href="#" className="hover:text-white">Tutoriais</a></li>
+                <li><a href="#" className="hover:text-white">Status do Sistema</a></li>
+                <li><a href="#" className="hover:text-white">Contato</a></li>
+              </ul>
+            </div>
+
+            {/* Contato */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Contato</h3>
+              <div className="space-y-3 text-gray-400">
+                <div className="flex items-center">
+                  <Mail className="h-4 w-4 mr-2" />
+                  <span>contato@salesinpro.com</span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="h-4 w-4 mr-2" />
+                  <span>+55 (11) 9999-9999</span>
+                </div>
+                <div className="flex items-center">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  <span>São Paulo, SP - Brasil</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <p>&copy; 2024 Salesin Pro. Todos os direitos reservados.</p>
+              <div className="flex space-x-6 mt-4 md:mt-0">
+                <a href="#" className="hover:text-white">Política de Privacidade</a>
+                <a href="#" className="hover:text-white">Termos de Uso</a>
+                <a href="#" className="hover:text-white">Cookies</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
