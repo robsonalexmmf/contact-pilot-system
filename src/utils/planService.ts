@@ -1,4 +1,3 @@
-
 export interface PlanLimits {
   maxLeads: number;
   maxPipelines: number;
@@ -142,10 +141,6 @@ export const isFeatureAvailable = (feature: keyof PlanLimits): boolean => {
  * Verifica se o limite de um recurso foi atingido
  */
 export const isLimitReached = (resource: string, currentCount: number): boolean => {
-  // Admin nunca atinge limite
-  const userEmail = localStorage.getItem('user_email');
-  if (userEmail === 'admin@test.com') return false;
-  
   const plan = getCurrentPlan();
   const limits = PLAN_LIMITS[plan.planType];
   
@@ -194,29 +189,4 @@ export const activatePlan = (planType: 'free' | 'pro' | 'premium'): void => {
   localStorage.setItem('last_usage_update', new Date().toDateString());
   
   console.log(`Plano ${planType} ativado:`, newPlan);
-};
-
-/**
- * Aplica limites do plano
- */
-export const checkPlanLimits = (resource: string, currentCount: number): { allowed: boolean; message?: string } => {
-  if (!isPlanActive()) {
-    return {
-      allowed: false,
-      message: 'Seu plano expirou. Faça upgrade para continuar usando.'
-    };
-  }
-
-  if (isLimitReached(resource, currentCount)) {
-    const plan = getCurrentPlan();
-    const limits = PLAN_LIMITS[plan.planType];
-    const limit = limits[resource as keyof PlanLimits] as number;
-    
-    return {
-      allowed: false,
-      message: `Limite de ${limit} ${resource} atingido. Faça upgrade para aumentar seus limites.`
-    };
-  }
-
-  return { allowed: true };
 };

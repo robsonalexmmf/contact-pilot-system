@@ -21,7 +21,7 @@ interface NewAutomationDialogProps {
 const triggerCategories = {
   vendas: [
     { id: "new_lead", name: "Novo Lead", icon: Users, description: "Lead criada no CRM" },
-    { id: "hot_lead", name: "Lead Quente", icon: TrendingUp, description: "Lead com score maior que 80" },
+    { id: "hot_lead", name: "Lead Quente", icon: TrendingUp, description: "Lead com score > 80" },
     { id: "meeting_scheduled", name: "Reunião Agendada", icon: Calendar, description: "Lead agenda reunião" },
     { id: "form_response", name: "Resposta Formulário", icon: Target, description: "Lead responde formulário" },
     { id: "proposal_sent", name: "Proposta Enviada", icon: Mail, description: "Proposta enviada" },
@@ -30,14 +30,11 @@ const triggerCategories = {
     { id: "proposal_approved", name: "Proposta Aprovada", icon: Target, description: "Cliente aprova proposta" }
   ],
   financeiro: [
-    { id: "payment_overdue", name: "Pagamento Atrasado", icon: DollarSign, description: "Cliente em atraso" },
-    { id: "new_customer", name: "Novo Cliente", icon: Users, description: "Lead virou cliente" },
-    { id: "boleto_request", name: "Solicitação Boleto", icon: DollarSign, description: "Cliente solicita boleto" }
+    { id: "payment_overdue", name: "Pagamento Atrasado", icon: DollarSign, description: "Cliente em atraso" }
   ],
   comunicacao: [
     { id: "whatsapp_message", name: "Mensagem WhatsApp", icon: MessageCircle, description: "Nova mensagem WhatsApp" },
-    { id: "lead_inactive", name: "Lead Inativa", icon: Clock, description: "Lead sem atividade por X dias" },
-    { id: "new_whats_lead", name: "Lead WhatsApp", icon: MessageCircle, description: "Nova lead via WhatsApp" }
+    { id: "lead_inactive", name: "Lead Inativa", icon: Clock, description: "Lead sem atividade por X dias" }
   ],
   relatorios: [
     { id: "weekly_report", name: "Relatório Semanal", icon: Target, description: "Todo domingo às 9h" },
@@ -46,8 +43,7 @@ const triggerCategories = {
   ],
   ia_seguranca: [
     { id: "user_login", name: "Login Usuário", icon: Shield, description: "Login detectado" },
-    { id: "ai_summary", name: "Resumo IA", icon: Bot, description: "Gerar resumo inteligente" },
-    { id: "lead_update", name: "Atualização Lead", icon: Target, description: "Dados da lead modificados" }
+    { id: "ai_summary", name: "Resumo IA", icon: Bot, description: "Gerar resumo inteligente" }
   ],
   tempo: [
     { id: "time_based", name: "Baseado em Tempo", icon: Clock, description: "Executar a cada X tempo" }
@@ -248,7 +244,7 @@ export const NewAutomationDialog = ({
                 <SelectContent>
                   <SelectItem value="all">Todos os Contatos</SelectItem>
                   <SelectItem value="leads">Apenas Leads</SelectItem>
-                  <SelectItem value="hot_leads">Leads Quentes (Score maior que 80)</SelectItem>
+                  <SelectItem value="hot_leads">Leads Quentes (Score > 80)</SelectItem>
                   <SelectItem value="customers">Apenas Clientes</SelectItem>
                   <SelectItem value="prospects">Apenas Prospects</SelectItem>
                   <SelectItem value="inactive_leads">Leads Inativas</SelectItem>

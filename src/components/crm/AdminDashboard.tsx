@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,178 +15,51 @@ import {
   AlertTriangle,
   CheckCircle,
   Settings,
-  UserCheck,
-  Globe
+  UserCheck
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+
+const adminKpiData = [
+  { icon: Users, title: "Usuários Ativos", value: "1,247", change: "+15%", trend: "up", color: "text-blue-600" },
+  { icon: Shield, title: "Contas Premium", value: "89", change: "+23%", trend: "up", color: "text-purple-600" },
+  { icon: DollarSign, title: "Receita Mensal", value: "R$ 45.780", change: "+18%", trend: "up", color: "text-green-600" },
+  { icon: Server, title: "Uptime do Sistema", value: "99.8%", change: "+0.2%", trend: "up", color: "text-orange-600" },
+];
+
+const userGrowthData = [
+  { month: 'Jan', usuarios: 850, premium: 45, receita: 22500 },
+  { month: 'Fev', usuarios: 920, premium: 52, receita: 26000 },
+  { month: 'Mar', usuarios: 1050, premium: 61, receita: 30500 },
+  { month: 'Abr', usuarios: 1150, premium: 68, receita: 34000 },
+  { month: 'Mai', usuarios: 1200, premium: 78, receita: 39000 },
+  { month: 'Jun', usuarios: 1247, premium: 89, receita: 45780 }
+];
+
+const planDistributionData = [
+  { name: 'Free', value: 758, color: '#94A3B8', percentage: 60.8 },
+  { name: 'Pro', value: 400, color: '#3B82F6', percentage: 32.1 },
+  { name: 'Premium', value: 89, color: '#8B5CF6', percentage: 7.1 }
+];
+
+const systemAlerts = [
+  { id: 1, type: "warning", message: "Limite de armazenamento em 85%", priority: "medium", time: "5 min atrás" },
+  { id: 2, type: "info", message: "Backup automático concluído", priority: "low", time: "1h atrás" },
+  { id: 3, type: "error", message: "Falha na integração com WhatsApp", priority: "high", time: "2h atrás" },
+  { id: 4, type: "success", message: "Atualização de segurança aplicada", priority: "medium", time: "3h atrás" }
+];
+
+const recentUsers = [
+  { id: 1, name: "João Silva", email: "joao@empresa.com", plan: "premium", status: "active", joined: "2 dias atrás" },
+  { id: 2, name: "Maria Santos", email: "maria@startup.com", plan: "pro", status: "active", joined: "5 dias atrás" },
+  { id: 3, name: "Pedro Costa", email: "pedro@negocio.com", plan: "free", status: "pending", joined: "1 sem atrás" },
+  { id: 4, name: "Ana Oliveira", email: "ana@consultoria.com", plan: "premium", status: "active", joined: "2 sem atrás" }
+];
 
 interface AdminDashboardProps {
   setActiveModule?: (module: string) => void;
 }
 
-interface AdminKPIData {
-  icon: any;
-  title: string;
-  value: string;
-  change: string;
-  trend: string;
-  color: string;
-}
-
-interface UserGrowthData {
-  month: string;
-  usuarios: number;
-  premium: number;
-  receita: number;
-}
-
-interface SystemMetric {
-  name: string;
-  value: number;
-  status: 'success' | 'warning' | 'error';
-}
-
-interface RecentActivity {
-  id: string;
-  type: string;
-  description: string;
-  timestamp: string;
-  user?: string;
-}
-
 export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
-  const [adminKpiData, setAdminKpiData] = useState<AdminKPIData[]>([]);
-  const [userGrowthData, setUserGrowthData] = useState<UserGrowthData[]>([]);
-  const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  const fetchDashboardData = async () => {
-    try {
-      console.log('Carregando dados do dashboard administrativo...');
-      
-      // Buscar dados das tabelas principais
-      const [profilesData, leadsData, dealsData, transactionsData, automationsData] = await Promise.all([
-        supabase.from('profiles').select('*'),
-        supabase.from('leads').select('*'),
-        supabase.from('deals').select('*'),
-        supabase.from('transactions').select('*'),
-        supabase.from('automations').select('*')
-      ]);
-
-      const profiles = profilesData.data || [];
-      const leads = leadsData.data || [];
-      const deals = dealsData.data || [];
-      const transactions = transactionsData.data || [];
-      const automations = automationsData.data || [];
-
-      // Calcular KPIs
-      const totalUsers = profiles.length;
-      const activeUsers = profiles.filter(p => p.status === 'Ativo').length;
-      const totalRevenue = transactions
-        .filter(t => t.type === 'receita' && t.status === 'Pago')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      const activeDeals = deals.filter(d => d.stage !== 'lost' && d.stage !== 'won').length;
-
-      const kpiData: AdminKPIData[] = [
-        { 
-          icon: Users, 
-          title: "Usuários Totais", 
-          value: totalUsers.toString(), 
-          change: "+12%", 
-          trend: "up", 
-          color: "text-blue-600" 
-        },
-        { 
-          icon: Shield, 
-          title: "Usuários Ativos", 
-          value: activeUsers.toString(), 
-          change: "+8%", 
-          trend: "up", 
-          color: "text-green-600" 
-        },
-        { 
-          icon: DollarSign, 
-          title: "Receita Total", 
-          value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, 
-          change: "+25%", 
-          trend: "up", 
-          color: "text-purple-600" 
-        },
-        { 
-          icon: TrendingUp, 
-          title: "Negócios Ativos", 
-          value: activeDeals.toString(), 
-          change: "+15%", 
-          trend: "up", 
-          color: "text-orange-600" 
-        },
-      ];
-
-      setAdminKpiData(kpiData);
-
-      // Dados de crescimento (últimos 6 meses)
-      const growthData: UserGrowthData[] = [
-        { month: 'Jan', usuarios: Math.floor(totalUsers * 0.6), premium: Math.floor(activeUsers * 0.5), receita: Math.floor(totalRevenue * 0.4) },
-        { month: 'Fev', usuarios: Math.floor(totalUsers * 0.7), premium: Math.floor(activeUsers * 0.6), receita: Math.floor(totalRevenue * 0.5) },
-        { month: 'Mar', usuarios: Math.floor(totalUsers * 0.8), premium: Math.floor(activeUsers * 0.7), receita: Math.floor(totalRevenue * 0.6) },
-        { month: 'Abr', usuarios: Math.floor(totalUsers * 0.85), premium: Math.floor(activeUsers * 0.8), receita: Math.floor(totalRevenue * 0.75) },
-        { month: 'Mai', usuarios: Math.floor(totalUsers * 0.92), premium: Math.floor(activeUsers * 0.9), receita: Math.floor(totalRevenue * 0.85) },
-        { month: 'Jun', usuarios: totalUsers, premium: activeUsers, receita: totalRevenue }
-      ];
-
-      setUserGrowthData(growthData);
-
-      // Métricas do sistema
-      const metrics: SystemMetric[] = [
-        { name: 'CPU Usage', value: 45, status: 'success' },
-        { name: 'Memory Usage', value: 62, status: 'warning' },
-        { name: 'Database Performance', value: 88, status: 'success' },
-        { name: 'API Response Time', value: 95, status: 'success' },
-        { name: 'Storage Usage', value: 34, status: 'success' },
-        { name: 'Active Connections', value: 156, status: 'success' }
-      ];
-
-      setSystemMetrics(metrics);
-
-      // Atividades recentes
-      const activities: RecentActivity[] = [
-        { id: '1', type: 'user_signup', description: 'Novo usuário cadastrado', timestamp: '2 min atrás', user: 'João Silva' },
-        { id: '2', type: 'deal_closed', description: 'Negócio fechado no valor de R$ 5.000', timestamp: '5 min atrás', user: 'Maria Santos' },
-        { id: '3', type: 'lead_imported', description: '50 novos leads importados', timestamp: '12 min atrás', user: 'Pedro Costa' },
-        { id: '4', type: 'automation_triggered', description: 'Automação de e-mail executada', timestamp: '15 min atrás' },
-        { id: '5', type: 'system_backup', description: 'Backup do sistema concluído', timestamp: '1 hora atrás' }
-      ];
-
-      setRecentActivities(activities);
-      setLoading(false);
-
-      console.log('Dashboard administrativo carregado com sucesso');
-
-    } catch (error) {
-      console.error('Erro ao carregar dashboard:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados do dashboard",
-        variant: "destructive"
-      });
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-    
-    // Atualizar dados a cada 30 segundos
-    const interval = setInterval(fetchDashboardData, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
   const handleSettingsClick = () => {
     console.log('Navegando para configurações...');
     if (setActiveModule) {
@@ -202,42 +74,42 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
     }
   };
 
-  const handleIntegrationsClick = () => {
-    console.log('Navegando para integrações...');
-    if (setActiveModule) {
-      setActiveModule('admin-integrations');
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-600 bg-red-50';
+      case 'medium': return 'text-yellow-600 bg-yellow-50';
+      case 'low': return 'text-green-600 bg-green-50';
+      default: return 'text-gray-600 bg-gray-50';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Carregando dashboard administrativo...</p>
-        </div>
-      </div>
-    );
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'inactive': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case 'premium': return 'bg-purple-100 text-purple-800';
+      case 'pro': return 'bg-blue-100 text-blue-800';
+      case 'free': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Admin Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard Administrativo</h1>
-          <p className="text-gray-600 dark:text-gray-400">Visão geral completa do sistema</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard Administrativo</h1>
+          <p className="text-gray-600 dark:text-gray-400">Visão geral do sistema e métricas administrativas</p>
         </div>
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleIntegrationsClick}
-            className="hover:bg-gray-100 transition-colors"
-          >
-            <Globe className="w-4 h-4 mr-2" />
-            Integrações
-          </Button>
           <Button 
             variant="outline" 
             size="sm"
@@ -258,12 +130,12 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
         </div>
       </div>
 
-      {/* KPIs Principais */}
+      {/* Admin KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {adminKpiData.map((kpi, index) => {
           const Icon = kpi.icon;
           return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -296,12 +168,12 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico de Crescimento */}
+        {/* User Growth Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="w-5 h-5 mr-2" />
-              Crescimento dos Últimos 6 Meses
+              Crescimento de Usuários e Receita
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -310,38 +182,57 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="usuarios" stroke="#3B82F6" strokeWidth={3} name="Usuários" />
-                <Line type="monotone" dataKey="premium" stroke="#8B5CF6" strokeWidth={2} name="Premium" />
-                <Line type="monotone" dataKey="receita" stroke="#10B981" strokeWidth={2} name="Receita" />
+                <Tooltip 
+                  formatter={(value, name) => [
+                    name === 'receita' ? `R$ ${value.toLocaleString()}` : value,
+                    name === 'usuarios' ? 'Usuários' : name === 'premium' ? 'Premium' : 'Receita'
+                  ]}
+                />
+                <Line type="monotone" dataKey="usuarios" stroke="#3B82F6" strokeWidth={3} />
+                <Line type="monotone" dataKey="premium" stroke="#8B5CF6" strokeWidth={2} />
+                <Line type="monotone" dataKey="receita" stroke="#10B981" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Métricas do Sistema */}
+        {/* Plan Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Server className="w-5 h-5 mr-2" />
-              Métricas do Sistema
-            </CardTitle>
+            <CardTitle>Distribuição de Planos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {systemMetrics.map((metric, index) => (
-                <div key={index}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>{metric.name}</span>
-                    <span>{metric.value}{metric.name.includes('Usage') ? '%' : ''}</span>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={planDistributionData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  dataKey="value"
+                >
+                  {planDistributionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 space-y-2">
+              {planDistributionData.map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div 
+                      className="w-3 h-3 rounded-full mr-2" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
                   </div>
-                  <Progress 
-                    value={metric.value} 
-                    className={`h-2 ${
-                      metric.status === 'success' ? 'text-green-600' : 
-                      metric.status === 'warning' ? 'text-yellow-600' : 'text-red-600'
-                    }`}
-                  />
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">{item.value}</span>
+                    <span className="text-xs text-gray-500">({item.percentage}%)</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -350,25 +241,34 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Atividades Recentes */}
+        {/* System Alerts */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="w-5 h-5 mr-2" />
-              Atividades Recentes
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertTriangle className="w-5 h-5 mr-2" />
+                Alertas do Sistema
+              </div>
+              <Badge variant="secondary">4 alertas</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
+              {systemAlerts.map((alert) => (
+                <div key={alert.id} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    alert.type === 'error' ? 'bg-red-500' : 
+                    alert.type === 'warning' ? 'bg-yellow-500' : 
+                    alert.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                  }`} />
                   <div className="flex-1">
-                    <p className="text-sm text-gray-900 dark:text-white">{activity.description}</p>
-                    {activity.user && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400">por {activity.user}</p>
-                    )}
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{activity.timestamp}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-900 dark:text-white">{alert.message}</p>
+                      <Badge className={`text-xs ${getPriorityColor(alert.priority)}`}>
+                        {alert.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{alert.time}</p>
                   </div>
                 </div>
               ))}
@@ -376,55 +276,83 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
           </CardContent>
         </Card>
 
-        {/* Status dos Serviços */}
+        {/* Recent Users */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Status dos Serviços
+              <Users className="w-5 h-5 mr-2" />
+              Usuários Recentes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-green-900">API Principal</p>
-                  <p className="text-xs text-green-700">Operacional</p>
+            <div className="space-y-4">
+              {recentUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {user.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={getPlanColor(user.plan)}>
+                      {user.plan.toUpperCase()}
+                    </Badge>
+                    <Badge className={getStatusColor(user.status)}>
+                      {user.status}
+                    </Badge>
+                  </div>
                 </div>
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-green-900">Banco de Dados</p>
-                  <p className="text-xs text-green-700">Operacional</p>
-                </div>
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-green-900">Automações</p>
-                  <p className="text-xs text-green-700">Operacional</p>
-                </div>
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-yellow-900">Backup System</p>
-                  <p className="text-xs text-yellow-700">Manutenção</p>
-                </div>
-                <AlertTriangle className="w-5 h-5 text-yellow-600" />
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Refresh Button */}
-      <div className="flex justify-center">
-        <Button onClick={fetchDashboardData} variant="outline">
-          Atualizar Dados
-        </Button>
-      </div>
+      {/* System Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Activity className="w-5 h-5 mr-2" />
+            Status dos Serviços
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-green-900">API Principal</p>
+                <p className="text-xs text-green-700">Funcionando</p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-green-900">Banco de Dados</p>
+                <p className="text-xs text-green-700">Funcionando</p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-yellow-900">WhatsApp API</p>
+                <p className="text-xs text-yellow-700">Instável</p>
+              </div>
+              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-green-900">Email Service</p>
+                <p className="text-xs text-green-700">Funcionando</p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
