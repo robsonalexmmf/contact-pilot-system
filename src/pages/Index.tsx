@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/crm/Sidebar";
 import { Header } from "@/components/crm/Header";
 import { Dashboard } from "@/components/crm/Dashboard";
@@ -32,11 +33,41 @@ import { OnboardingFlow } from "@/components/crm/OnboardingFlow";
 import { FormBuilder } from "@/components/crm/FormBuilder";
 import { CommandPalette } from "@/components/crm/CommandPalette";
 import { ComplianceManager } from "@/components/crm/ComplianceManager";
+import { PlanLimitDialog } from "@/components/crm/PlanLimitDialog";
+import { isPlanActive, getUsageInfo, isFeatureAvailable } from "@/utils/planService";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [planLimitDialog, setPlanLimitDialog] = useState<{
+    open: boolean;
+    limitType: string;
+    currentCount: number;
+  }>({ open: false, limitType: '', currentCount: 0 });
+  
+  const navigate = useNavigate();
+
+  // Verificar se usuário está logado
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('user_logged_in');
+    if (!isLoggedIn) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // Verificar status do plano
+  useEffect(() => {
+    const { isActive, daysRemaining } = getUsageInfo();
+    
+    if (!isActive) {
+      setPlanLimitDialog({
+        open: true,
+        limitType: 'days',
+        currentCount: 0
+      });
+    }
+  }, []);
 
   // Command Palette shortcut
   useEffect(() => {
@@ -50,6 +81,38 @@ const Index = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Verificar acesso a funcionalidades
+  const checkFeatureAccess = (feature: string) => {
+    if (!isPlanActive()) {
+      setPlanLimitDialog({
+        open: true,
+        limitType: 'days',
+        currentCount: 0
+      });
+      return false;
+    }
+
+    // Verificar funcionalidades específicas por plano
+    const restrictedFeatures = {
+      'automation': 'hasAdvancedReports',
+      'integrations': 'hasApiAccess',
+      'ai-copilot': 'hasApiAccess',
+      'reports': 'hasAdvancedReports'
+    };
+
+    const requiredFeature = restrictedFeatures[feature as keyof typeof restrictedFeatures];
+    if (requiredFeature && !isFeatureAvailable(requiredFeature as any)) {
+      setPlanLimitDialog({
+        open: true,
+        limitType: feature,
+        currentCount: 1
+      });
+      return false;
+    }
+
+    return true;
+  };
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -68,9 +131,9 @@ const Index = () => {
       case "financial":
         return <FinancialManager />;
       case "automation":
-        return <AutomationManager />;
+        return checkFeatureAccess('automation') ? <AutomationManager /> : <Dashboard />;
       case "reports":
-        return <Reports />;
+        return checkFeatureAccess('reports') ? <Reports /> : <Dashboard />;
       case "settings":
         return <Settings />;
       case "chat":
@@ -84,9 +147,9 @@ const Index = () => {
       case "users":
         return <UserManagement />;
       case "integrations":
-        return <Integrations />;
+        return checkFeatureAccess('integrations') ? <Integrations /> : <Dashboard />;
       case "ai-copilot":
-        return <AICopilot />;
+        return checkFeatureAccess('ai-copilot') ? <AICopilot /> : <Dashboard />;
       case "social-crm":
         return <SocialCRM />;
       case "lead-scoring":
@@ -140,6 +203,13 @@ const Index = () => {
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         onNavigate={(module) => setActiveModule(module)}
+      />
+
+      <PlanLimitDialog
+        open={planLimitDialog.open}
+        onClose={() => setPlanLimitDialog({ open: false, limitType: '', currentCount: 0 })}
+        limitType={planLimitDialog.limitType}
+        currentCount={planLimitDialog.currentCount}
       />
     </div>
   );
