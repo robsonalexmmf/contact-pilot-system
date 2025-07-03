@@ -6,17 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   Users, 
-  Plus, 
   Search, 
   Filter,
   Phone,
   Mail,
   MapPin,
   Calendar,
-  MoreHorizontal,
   Star,
   UserPlus
 } from "lucide-react";
+import { NewLeadDialog } from "./NewLeadDialog";
+import { LeadActionsMenu } from "./LeadActionsMenu";
 
 const mockLeads = [
   {
@@ -65,23 +65,71 @@ const statusColors: Record<string, string> = {
 };
 
 export const LeadsManager = () => {
-  const [leads] = useState(mockLeads);
+  const [leads, setLeads] = useState(mockLeads);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleNewLead = () => {
-    console.log("Criando novo lead...");
+  const handleCreateLead = (newLead: any) => {
+    setLeads(prev => [...prev, newLead]);
+    console.log("Lead adicionado à lista:", newLead);
+  };
+
+  const handleEditLead = (lead: any) => {
+    console.log(`Editando lead: ${lead.name}`);
+    // Aqui você implementaria a lógica de edição
+  };
+
+  const handleDeleteLead = (leadId: number) => {
+    setLeads(prev => prev.filter(lead => lead.id !== leadId));
+    console.log(`Lead ${leadId} removido`);
   };
 
   const handleCallLead = (leadId: number) => {
-    console.log(`Ligando para lead ${leadId}...`);
+    const lead = leads.find(l => l.id === leadId);
+    console.log(`Iniciando ligação para ${lead?.name} - ${lead?.phone}`);
+    // Aqui você integraria com sistema de telefonia
   };
 
   const handleEmailLead = (leadId: number) => {
-    console.log(`Enviando email para lead ${leadId}...`);
+    const lead = leads.find(l => l.id === leadId);
+    console.log(`Abrindo composição de email para ${lead?.name} - ${lead?.email}`);
+    // Aqui você abriria o composer de email
+    window.open(`mailto:${lead?.email}?subject=Contato via Salesin Pro`);
   };
 
   const handleScheduleMeeting = (leadId: number) => {
-    console.log(`Agendando reunião com lead ${leadId}...`);
+    const lead = leads.find(l => l.id === leadId);
+    console.log(`Agendando reunião com ${lead?.name}`);
+    // Aqui você integraria com sistema de agenda
+  };
+
+  const handleCreateProposal = (leadId: number) => {
+    const lead = leads.find(l => l.id === leadId);
+    console.log(`Criando proposta para ${lead?.name}`);
+    // Aqui você redirecionaria para criação de proposta
+  };
+
+  const handleConvertToCustomer = (leadId: number) => {
+    const lead = leads.find(l => l.id === leadId);
+    console.log(`Convertendo lead ${lead?.name} em cliente`);
+    // Aqui você implementaria a conversão
+  };
+
+  const handleMarkAsFavorite = (leadId: number) => {
+    const lead = leads.find(l => l.id === leadId);
+    console.log(`Marcando ${lead?.name} como favorito`);
+    // Aqui você implementaria a funcionalidade de favoritos
+  };
+
+  const handleQuickCall = (leadId: number) => {
+    handleCallLead(leadId);
+  };
+
+  const handleQuickEmail = (leadId: number) => {
+    handleEmailLead(leadId);
+  };
+
+  const handleQuickMeeting = (leadId: number) => {
+    handleScheduleMeeting(leadId);
   };
 
   const filteredLeads = leads.filter(lead =>
@@ -97,10 +145,7 @@ export const LeadsManager = () => {
           <h1 className="text-2xl font-bold text-gray-900">Leads & Contatos</h1>
           <p className="text-gray-600">Gerencie seus leads e oportunidades</p>
         </div>
-        <Button onClick={handleNewLead} className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Lead
-        </Button>
+        <NewLeadDialog onCreateLead={handleCreateLead} />
       </div>
 
       {/* Stats */}
@@ -191,9 +236,17 @@ export const LeadsManager = () => {
                   <Badge className={statusColors[lead.status]}>
                     {lead.status}
                   </Badge>
-                  <Button size="sm" variant="ghost">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
+                  <LeadActionsMenu
+                    lead={lead}
+                    onEdit={handleEditLead}
+                    onDelete={handleDeleteLead}
+                    onCall={handleCallLead}
+                    onEmail={handleEmailLead}
+                    onScheduleMeeting={handleScheduleMeeting}
+                    onCreateProposal={handleCreateProposal}
+                    onConvertToCustomer={handleConvertToCustomer}
+                    onMarkAsFavorite={handleMarkAsFavorite}
+                  />
                 </div>
               </div>
 
@@ -224,13 +277,28 @@ export const LeadsManager = () => {
               </div>
 
               <div className="flex space-x-2">
-                <Button size="sm" variant="outline" onClick={() => handleCallLead(lead.id)}>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleQuickCall(lead.id)}
+                  className="flex-1"
+                >
                   <Phone className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleEmailLead(lead.id)}>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleQuickEmail(lead.id)}
+                  className="flex-1"
+                >
                   <Mail className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleScheduleMeeting(lead.id)}>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => handleQuickMeeting(lead.id)}
+                  className="flex-1"
+                >
                   <Calendar className="w-4 h-4" />
                 </Button>
               </div>
