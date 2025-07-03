@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Sidebar } from "@/components/crm/Sidebar";
 import { Header } from "@/components/crm/Header";
@@ -23,6 +24,12 @@ import { LeadScoring } from "@/components/crm/LeadScoring";
 import { ExtensionsManager } from "@/components/crm/ExtensionsManager";
 import { TeamMetrics } from "@/components/crm/TeamMetrics";
 import { Academy } from "@/components/crm/Academy";
+import { SandboxEnvironment } from "@/components/crm/SandboxEnvironment";
+import { SentimentAnalysis } from "@/components/crm/SentimentAnalysis";
+import { ERPLite } from "@/components/crm/ERPLite";
+import { ABTesting } from "@/components/crm/ABTesting";
+import { OnboardingFlow } from "@/components/crm/OnboardingFlow";
+import { FormBuilder } from "@/components/crm/FormBuilder";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -74,6 +81,18 @@ const Index = () => {
         return <TeamMetrics />;
       case "academy":
         return <Academy />;
+      case "sandbox":
+        return <SandboxEnvironment />;
+      case "sentiment":
+        return <SentimentAnalysis />;
+      case "erp":
+        return <ERPLite />;
+      case "ab-testing":
+        return <ABTesting />;
+      case "onboarding":
+        return <OnboardingFlow />;
+      case "form-builder":
+        return <FormBuilder />;
       default:
         return <Dashboard />;
     }
