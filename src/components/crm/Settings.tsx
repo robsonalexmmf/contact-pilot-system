@@ -20,6 +20,7 @@ import {
   Trash2,
   Save
 } from "lucide-react";
+import { createUserInvite, getStoredInvites } from "@/utils/inviteService";
 
 interface TeamMember {
   id: number;
@@ -340,26 +341,85 @@ export const Settings = () => {
       });
       return;
     }
+
+    // Verificar se já existe convite pendente para este email
+    const pendingInvites = getStoredInvites();
+    const existingInvite = pendingInvites.find(invite => invite.email === email);
     
-    const newUser: TeamMember = {
-      id: Math.max(...teamMembers.map(m => m.id)) + 1,
-      name: "Usuário Convidado",
-      email: email,
-      role: "Vendedor",
-      status: "Pendente",
-      lastLogin: "Nunca"
+    if (existingInvite) {
+      toast({
+        title: "Convite Já Enviado",
+        description: `Já existe um convite pendente para ${email}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar se já existe usuário com este email
+    const existingUser = teamMembers.find(member => member.email === email);
+    if (existingUser) {
+      toast({
+        title: "Usuário Já Existe",
+        description: `${email} já faz parte da equipe`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Solicitar função do usuário
+    const role = prompt("Selecione a função:\n1 - Administrador\n2 - Gerente de Vendas\n3 - Vendedor\n\nDigite o número (1-3):");
+    
+    const roleMap: { [key: string]: string } = {
+      "1": "Administrador",
+      "2": "Gerente de Vendas", 
+      "3": "Vendedor"
     };
+
+    const selectedRole = roleMap[role || "3"] || "Vendedor";
     
-    const updatedTeam = [...teamMembers, newUser];
-    setTeamMembers(updatedTeam);
-    localStorage.setItem('team_members', JSON.stringify(updatedTeam));
-    
-    toast({
-      title: "Convite Enviado",
-      description: `Convite enviado para ${email}`,
-    });
-    
-    console.log("Usuário convidado:", newUser);
+    try {
+      // Criar e enviar convite real
+      const inviteData = createUserInvite(
+        email,
+        selectedRole,
+        "Admin", // TODO: pegar do usuário logado
+        companyData.name || "Sistema CRM"
+      );
+
+      // Adicionar usuário pendente à lista
+      const newUser: TeamMember = {
+        id: Math.max(...teamMembers.map(m => m.id), 0) + 1,
+        name: "Convite Pendente",
+        email: email,
+        role: selectedRole,
+        status: "Convite Enviado",
+        lastLogin: "Nunca"
+      };
+      
+      const updatedTeam = [...teamMembers, newUser];
+      setTeamMembers(updatedTeam);
+      localStorage.setItem('team_members', JSON.stringify(updatedTeam));
+      
+      toast({
+        title: "Convite Enviado com Sucesso",
+        description: `Email de convite enviado para ${email}. O link de convite é válido por 7 dias.`,
+      });
+      
+      console.log("Convite criado:", {
+        email: inviteData.email,
+        role: inviteData.role,
+        token: inviteData.token,
+        expiresAt: inviteData.expiresAt
+      });
+
+    } catch (error) {
+      console.error("Erro ao enviar convite:", error);
+      toast({
+        title: "Erro ao Enviar Convite",
+        description: "Falha ao enviar o convite. Verifique se seu cliente de email está configurado.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditMember = (id: number) => {
