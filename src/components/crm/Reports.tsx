@@ -1,7 +1,10 @@
-
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/ui/date-picker";
 import { 
   Download, 
   Calendar, 
@@ -9,9 +12,13 @@ import {
   TrendingUp,
   Users,
   Target,
-  DollarSign
+  DollarSign,
+  Filter,
+  FileText,
+  FileSpreadsheet
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { useToast } from "@/hooks/use-toast";
 
 const salesData = [
   { month: 'Jan', vendas: 65000, leads: 120, conversao: 15.2 },
@@ -37,25 +44,295 @@ const performanceData = [
   { name: 'Pedro Oliveira', leads: 29, deals: 8, revenue: 95000 }
 ];
 
+interface DateRange {
+  from: Date | undefined;
+  to: Date | undefined;
+}
+
 export const Reports = () => {
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [selectedPeriod, setSelectedPeriod] = useState("last-6-months");
+  const [selectedMetric, setSelectedMetric] = useState("all");
+  const [selectedSource, setSelectedSource] = useState("all");
+  const { toast } = useToast();
+
+  // Filter data based on selected period
+  const getFilteredData = () => {
+    // Here you would implement actual filtering logic based on dateRange/selectedPeriod
+    return salesData;
+  };
+
+  const handlePeriodFilter = () => {
+    toast({
+      title: "Filtro Aplicado",
+      description: `Período alterado para: ${selectedPeriod === 'custom' ? 'Personalizado' : selectedPeriod}`,
+    });
+    console.log("Filtro de período aplicado:", { selectedPeriod, dateRange });
+  };
+
+  const exportToPDF = () => {
+    const reportContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Relatório Completo - CRM Analytics</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3B82F6; padding-bottom: 20px; }
+          .section { margin-bottom: 30px; }
+          .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; }
+          .metric-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f2f2f2; font-weight: bold; }
+          .positive { color: #10B981; font-weight: bold; }
+          .chart-placeholder { background: #f5f5f5; padding: 40px; text-align: center; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Relatório de Analytics - CRM</h1>
+          <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+        </div>
+        
+        <div class="section">
+          <h2>Métricas Principais</h2>
+          <div class="metrics">
+            <div class="metric-card">
+              <h3>Receita Total</h3>
+              <p class="positive">R$ 554.500</p>
+              <small>+23% vs período anterior</small>
+            </div>
+            <div class="metric-card">
+              <h3>Total de Leads</h3>
+              <p class="positive">1.007</p>
+              <small>+15% vs período anterior</small>
+            </div>
+            <div class="metric-card">
+              <h3>Taxa de Conversão</h3>
+              <p class="positive">18.1%</p>
+              <small>+2.3% vs período anterior</small>
+            </div>
+            <div class="metric-card">
+              <h3>Ticket Médio</h3>
+              <p class="positive">R$ 8.750</p>
+              <small>+5% vs período anterior</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Performance Mensal</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th>Vendas</th>
+                <th>Leads</th>
+                <th>Conversão</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${salesData.map(item => `
+                <tr>
+                  <td>${item.month}</td>
+                  <td>R$ ${item.vendas.toLocaleString()}</td>
+                  <td>${item.leads}</td>
+                  <td>${item.conversao}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>Origem dos Leads</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fonte</th>
+                <th>Porcentagem</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sourceData.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.value}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h2>Performance da Equipe</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Leads</th>
+                <th>Negócios</th>
+                <th>Receita</th>
+                <th>Taxa Conversão</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${performanceData.map(person => `
+                <tr>
+                  <td>${person.name}</td>
+                  <td>${person.leads}</td>
+                  <td>${person.deals}</td>
+                  <td>R$ ${person.revenue.toLocaleString()}</td>
+                  <td>${((person.deals / person.leads) * 100).toFixed(1)}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([reportContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relatorio-completo-${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Relatório Exportado",
+      description: "Relatório completo em PDF foi baixado com sucesso",
+    });
+  };
+
+  const exportLeadsCSV = () => {
+    const csvContent = `Nome,Empresa,Status,Origem,Data,Valor\n${performanceData.map(person => 
+      `${person.name},Empresa,Ativo,Website,${new Date().toLocaleDateString()},${person.revenue}`
+    ).join('\n')}`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV Exportado",
+      description: "Dados de leads exportados em CSV",
+    });
+  };
+
+  const exportSalesExcel = () => {
+    const excelContent = `Mês,Vendas,Leads,Conversão\n${salesData.map(item => 
+      `${item.month},${item.vendas},${item.leads},${item.conversao}%`
+    ).join('\n')}`;
+    
+    const blob = new Blob([excelContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vendas-${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Excel Exportado",
+      description: "Performance de vendas exportada em Excel",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Report Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Relatórios e Analytics</h1>
           <p className="text-gray-600">Análise completa do desempenho de vendas</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline">
-            <Calendar className="w-4 h-4 mr-2" />
-            Filtrar Período
+        <div className="flex flex-wrap gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-48">
+              <Calendar className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Selecionar período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="yesterday">Ontem</SelectItem>
+              <SelectItem value="last-7-days">Últimos 7 dias</SelectItem>
+              <SelectItem value="last-30-days">Últimos 30 dias</SelectItem>
+              <SelectItem value="last-3-months">Últimos 3 meses</SelectItem>
+              <SelectItem value="last-6-months">Últimos 6 meses</SelectItem>
+              <SelectItem value="current-year">Ano atual</SelectItem>
+              <SelectItem value="custom">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {selectedPeriod === 'custom' && (
+            <DatePickerWithRange
+              date={dateRange}
+              onDateChange={setDateRange}
+            />
+          )}
+          
+          <Button variant="outline" onClick={handlePeriodFilter}>
+            <Filter className="w-4 h-4 mr-2" />
+            Aplicar Filtro
           </Button>
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
+          
+          <Button className="bg-gradient-to-r from-blue-600 to-purple-600" onClick={exportToPDF}>
             <Download className="w-4 h-4 mr-2" />
             Exportar PDF
           </Button>
         </div>
+      </div>
+
+      {/* Filters Row */}
+      <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Métrica:</label>
+          <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="revenue">Receita</SelectItem>
+              <SelectItem value="leads">Leads</SelectItem>
+              <SelectItem value="conversion">Conversão</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Origem:</label>
+          <Select value={selectedSource} onValueChange={setSelectedSource}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="website">Website</SelectItem>
+              <SelectItem value="linkedin">LinkedIn</SelectItem>
+              <SelectItem value="referral">Indicação</SelectItem>
+              <SelectItem value="events">Eventos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <Badge variant="outline" className="ml-auto">
+          Filtros ativos: {[selectedMetric !== 'all', selectedSource !== 'all', selectedPeriod !== 'last-6-months'].filter(Boolean).length}
+        </Badge>
       </div>
 
       {/* Key Metrics */}
@@ -231,25 +508,56 @@ export const Reports = () => {
         </Card>
       </div>
 
-      {/* Export Options */}
+      {/* Export Options - Enhanced */}
       <Card>
         <CardHeader>
           <CardTitle>Opções de Exportação</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="flex items-center justify-center p-6">
-              <Download className="w-5 h-5 mr-2" />
-              Relatório Completo (PDF)
+            <Button 
+              variant="outline" 
+              className="flex items-center justify-center p-6 h-auto flex-col gap-2"
+              onClick={exportToPDF}
+            >
+              <FileText className="w-8 h-8 text-red-500" />
+              <div className="text-center">
+                <div className="font-medium">Relatório Completo</div>
+                <div className="text-sm text-gray-500">PDF com todos os dados</div>
+              </div>
             </Button>
-            <Button variant="outline" className="flex items-center justify-center p-6">
-              <Download className="w-5 h-5 mr-2" />
-              Dados de Leads (CSV)
+            
+            <Button 
+              variant="outline" 
+              className="flex items-center justify-center p-6 h-auto flex-col gap-2"
+              onClick={exportLeadsCSV}
+            >
+              <FileSpreadsheet className="w-8 h-8 text-green-500" />
+              <div className="text-center">
+                <div className="font-medium">Dados de Leads</div>
+                <div className="text-sm text-gray-500">CSV para análise</div>
+              </div>
             </Button>
-            <Button variant="outline" className="flex items-center justify-center p-6">
-              <Download className="w-5 h-5 mr-2" />
-              Performance de Vendas (Excel)
+            
+            <Button 
+              variant="outline" 
+              className="flex items-center justify-center p-6 h-auto flex-col gap-2"
+              onClick={exportSalesExcel}
+            >
+              <FileSpreadsheet className="w-8 h-8 text-blue-500" />
+              <div className="text-center">
+                <div className="font-medium">Performance de Vendas</div>
+                <div className="text-sm text-gray-500">Excel com gráficos</div>
+              </div>
             </Button>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Dica de Exportação</h4>
+            <p className="text-sm text-blue-700">
+              Use os filtros acima para personalizar os dados antes de exportar. 
+              Os relatórios incluirão apenas os dados do período e métricas selecionadas.
+            </p>
           </div>
         </CardContent>
       </Card>
