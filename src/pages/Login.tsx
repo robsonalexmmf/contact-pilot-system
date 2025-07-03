@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Info } from "lucide-react";
+import { authenticateTestUser, TEST_USERS } from "@/utils/testUsers";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,19 +15,37 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simular login
+    // Simular delay de autenticação
     setTimeout(() => {
-      console.log("Login realizado:", { email, password });
-      localStorage.setItem('user_logged_in', 'true');
-      localStorage.setItem('user_email', email);
+      const user = authenticateTestUser(email, password);
+      
+      if (user) {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: `Bem-vindo, ${user.name} (${user.plan.toUpperCase()})`,
+        });
+        navigate("/app");
+      } else {
+        toast({
+          title: "Erro no login",
+          description: "Email ou senha incorretos",
+          variant: "destructive"
+        });
+      }
+      
       setIsLoading(false);
-      navigate("/");
     }, 1000);
+  };
+
+  const handleTestLogin = (testUser: typeof TEST_USERS[0]) => {
+    setEmail(testUser.email);
+    setPassword(testUser.password);
   };
 
   return (
@@ -46,6 +66,30 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Usuários de Teste */}
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Info className="w-4 h-4 text-blue-600 mr-2" />
+                <span className="text-sm font-medium text-blue-900">Usuários de Teste</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {TEST_USERS.map((user) => (
+                  <Button
+                    key={user.id}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTestLogin(user)}
+                    className="text-xs"
+                  >
+                    {user.plan.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-blue-700 mt-2">
+                Clique em um plano para preencher automaticamente
+              </p>
+            </div>
+
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

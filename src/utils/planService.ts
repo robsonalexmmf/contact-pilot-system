@@ -1,4 +1,3 @@
-
 export interface PlanLimits {
   maxLeads: number;
   maxPipelines: number;
@@ -105,6 +104,10 @@ export const updateDaysUsed = (): void => {
  * Verifica se o plano está ativo
  */
 export const isPlanActive = (): boolean => {
+  // Se for admin, sempre ativo
+  const userEmail = localStorage.getItem('user_email');
+  if (userEmail === 'admin@test.com') return true;
+  
   const plan = getCurrentPlan();
   const limits = PLAN_LIMITS[plan.planType];
   
@@ -122,6 +125,10 @@ export const isPlanActive = (): boolean => {
  * Verifica se uma funcionalidade está disponível
  */
 export const isFeatureAvailable = (feature: keyof PlanLimits): boolean => {
+  // Admin tem acesso a tudo
+  const userEmail = localStorage.getItem('user_email');
+  if (userEmail === 'admin@test.com') return true;
+  
   const plan = getCurrentPlan();
   const limits = PLAN_LIMITS[plan.planType];
   
