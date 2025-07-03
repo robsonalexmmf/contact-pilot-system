@@ -47,7 +47,7 @@ interface AdminIntegration {
   id: string;
   name: string;
   description: string;
-  icon: JSX.Element;
+  iconName: string; // Mudança: usar string em vez de JSX.Element
   enabled: boolean;
   webhookUrl: string;
   apiKey: string;
@@ -59,6 +59,16 @@ interface AdminIntegration {
   lastTested?: string;
   testStatus?: 'success' | 'failed' | 'pending';
 }
+
+// Mapeamento de ícones
+const iconMap: { [key: string]: any } = {
+  Zap,
+  MessageSquare,
+  Mail,
+  Slack,
+  Globe,
+  Calendar
+};
 
 export const AdminIntegrations = () => {
   const { toast } = useToast();
@@ -89,7 +99,7 @@ export const AdminIntegrations = () => {
             id: "zapier-global",
             name: "Zapier Global",
             description: "Integração global com Zapier para todos os usuários",
-            icon: <Zap className="w-5 h-5" />,
+            iconName: "Zap", // Mudança: usar string
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -102,7 +112,7 @@ export const AdminIntegrations = () => {
             id: "whatsapp-business",
             name: "WhatsApp Business API",
             description: "API oficial do WhatsApp para mensagens",
-            icon: <MessageSquare className="w-5 h-5" />,
+            iconName: "MessageSquare", // Mudança: usar string
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -115,7 +125,7 @@ export const AdminIntegrations = () => {
             id: "smtp-global",
             name: "SMTP Global",
             description: "Servidor SMTP para envio de emails do sistema",
-            icon: <Mail className="w-5 h-5" />,
+            iconName: "Mail", // Mudança: usar string
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -128,7 +138,7 @@ export const AdminIntegrations = () => {
             id: "slack-admin",
             name: "Slack Administrativo",
             description: "Notificações administrativas no Slack",
-            icon: <Slack className="w-5 h-5" />,
+            iconName: "Slack", // Mudança: usar string
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -335,7 +345,7 @@ export const AdminIntegrations = () => {
       id: `custom-${Date.now()}`,
       name: data.name,
       description: data.description,
-      icon: <Globe className="w-5 h-5" />,
+      iconName: "Globe", // Mudança: usar string
       enabled: false,
       webhookUrl: data.webhookUrl,
       apiKey: data.apiKey,
@@ -398,6 +408,25 @@ export const AdminIntegrations = () => {
       console.error("Erro ao salvar integrações:", error);
       throw error;
     }
+  };
+
+  // Sincronizar integrações ativas com o CRM
+  const syncIntegrationsWithCRM = () => {
+    const activeIntegrations = integrations.filter(int => int.enabled && int.isGlobal);
+    
+    const crmIntegrations = activeIntegrations.map(int => ({
+      id: int.id,
+      name: int.name,
+      description: int.description,
+      enabled: int.enabled,
+      webhookUrl: int.webhookUrl,
+      apiKey: int.apiKey,
+      category: int.category,
+      isFromAdmin: true
+    }));
+    
+    localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
+    console.log('Integrações sincronizadas com o CRM:', crmIntegrations);
   };
 
   const activeIntegrations = integrations.filter(i => i.enabled).length;
@@ -496,125 +525,130 @@ export const AdminIntegrations = () => {
 
       {/* Integrations List */}
       <div className="space-y-4">
-        {integrations.map((integration) => (
-          <Card key={integration.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-4 flex-1">
-                  <div className="p-3 bg-gray-100 rounded-lg">
-                    {integration.icon}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="font-semibold text-gray-900">{integration.name}</h3>
-                      <Badge className={integration.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                        {integration.enabled ? 'Ativa' : 'Inativa'}
-                      </Badge>
-                      {integration.isGlobal && (
-                        <Badge className="bg-purple-100 text-purple-800">
-                          Global
+        {integrations.map((integration) => {
+          // Mudança: obter o ícone do mapeamento
+          const IconComponent = iconMap[integration.iconName] || Globe;
+          
+          return (
+            <Card key={integration.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className="p-3 bg-gray-100 rounded-lg">
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="font-semibold text-gray-900">{integration.name}</h3>
+                        <Badge className={integration.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                          {integration.enabled ? 'Ativa' : 'Inativa'}
                         </Badge>
-                      )}
-                      <Badge variant="outline">
-                        {integration.category}
-                      </Badge>
-                      {integration.testStatus && (
-                        <Badge className={integration.testStatus === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                          {integration.testStatus === 'success' ? 'Testada ✓' : 'Falha no teste'}
+                        {integration.isGlobal && (
+                          <Badge className="bg-purple-100 text-purple-800">
+                            Global
+                          </Badge>
+                        )}
+                        <Badge variant="outline">
+                          {integration.category}
                         </Badge>
+                        {integration.testStatus && (
+                          <Badge className={integration.testStatus === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                            {integration.testStatus === 'success' ? 'Testada ✓' : 'Falha no teste'}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-gray-600 mb-3">{integration.description}</p>
+                      
+                      {editingIntegration === integration.id ? (
+                        <div className="space-y-3">
+                          <div>
+                            <Label>Webhook URL *</Label>
+                            <Input
+                              value={integration.webhookUrl}
+                              onChange={(e) => handleUpdateIntegration(integration.id, 'webhookUrl', e.target.value)}
+                              placeholder="https://hooks.zapier.com/hooks/catch/..."
+                            />
+                          </div>
+                          <div>
+                            <Label>API Key (opcional)</Label>
+                            <Input
+                              type="password"
+                              value={integration.apiKey}
+                              onChange={(e) => handleUpdateIntegration(integration.id, 'apiKey', e.target.value)}
+                              placeholder="Chave de API"
+                            />
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button onClick={() => handleSaveIntegration(integration.id)} size="sm">
+                              <Save className="w-4 h-4 mr-1" />
+                              Salvar
+                            </Button>
+                            <Button onClick={() => setEditingIntegration(null)} size="sm" variant="outline">
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-600">Criada em</p>
+                            <p className="font-medium">{integration.createdAt}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Último uso</p>
+                            <p className="font-medium">{integration.lastUsed || 'Nunca'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Uso total</p>
+                            <p className="font-medium">{integration.usageCount.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Último teste</p>
+                            <p className="font-medium">{integration.lastTested ? new Date(integration.lastTested).toLocaleDateString() : 'Nunca'}</p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <p className="text-gray-600 mb-3">{integration.description}</p>
-                    
-                    {editingIntegration === integration.id ? (
-                      <div className="space-y-3">
-                        <div>
-                          <Label>Webhook URL *</Label>
-                          <Input
-                            value={integration.webhookUrl}
-                            onChange={(e) => handleUpdateIntegration(integration.id, 'webhookUrl', e.target.value)}
-                            placeholder="https://hooks.zapier.com/hooks/catch/..."
-                          />
-                        </div>
-                        <div>
-                          <Label>API Key (opcional)</Label>
-                          <Input
-                            type="password"
-                            value={integration.apiKey}
-                            onChange={(e) => handleUpdateIntegration(integration.id, 'apiKey', e.target.value)}
-                            placeholder="Chave de API"
-                          />
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button onClick={() => handleSaveIntegration(integration.id)} size="sm">
-                            <Save className="w-4 h-4 mr-1" />
-                            Salvar
-                          </Button>
-                          <Button onClick={() => setEditingIntegration(null)} size="sm" variant="outline">
-                            Cancelar
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Criada em</p>
-                          <p className="font-medium">{integration.createdAt}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Último uso</p>
-                          <p className="font-medium">{integration.lastUsed || 'Nunca'}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Uso total</p>
-                          <p className="font-medium">{integration.usageCount.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Último teste</p>
-                          <p className="font-medium">{integration.lastTested ? new Date(integration.lastTested).toLocaleDateString() : 'Nunca'}</p>
-                        </div>
-                      </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={integration.enabled}
+                      onCheckedChange={() => handleToggleIntegration(integration.id)}
+                    />
+                    {editingIntegration === integration.id ? null : (
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleTestIntegration(integration.id)}
+                          disabled={testingIntegrations.has(integration.id) || !integration.webhookUrl}
+                        >
+                          <TestTube className="w-4 h-4" />
+                          {testingIntegrations.has(integration.id) ? "Testando..." : "Testar"}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => setEditingIntegration(integration.id)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleDeleteIntegration(integration.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={integration.enabled}
-                    onCheckedChange={() => handleToggleIntegration(integration.id)}
-                  />
-                  {editingIntegration === integration.id ? null : (
-                    <>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleTestIntegration(integration.id)}
-                        disabled={testingIntegrations.has(integration.id) || !integration.webhookUrl}
-                      >
-                        <TestTube className="w-4 h-4" />
-                        {testingIntegrations.has(integration.id) ? "Testando..." : "Testar"}
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => setEditingIntegration(integration.id)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleDeleteIntegration(integration.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {integrations.length === 0 && (
