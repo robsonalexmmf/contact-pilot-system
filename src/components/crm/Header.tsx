@@ -109,17 +109,3 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
     </header>
   );
 };
-</DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </header>
-  );
-};
-</DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </header>
-  );
-};
