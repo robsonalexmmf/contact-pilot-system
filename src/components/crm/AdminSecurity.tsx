@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +52,33 @@ interface BlockedIP {
   autoBlocked: boolean;
 }
 
+interface AuditResult {
+  score: number;
+  vulnerabilities: Array<{
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    title: string;
+    description: string;
+    recommendation: string;
+  }>;
+  warnings: Array<{
+    title: string;
+    description: string;
+    recommendation: string;
+  }>;
+  recommendations: Array<{
+    title: string;
+    description: string;
+    impact: string;
+  }>;
+  dataAnalysis: {
+    totalUsers: number;
+    totalLeads: number;
+    totalTransactions: number;
+    recentActivity: number;
+    suspiciousPatterns: number;
+  };
+}
+
 export const AdminSecurity = () => {
   const { toast } = useToast();
   const [events, setEvents] = useState<SecurityEvent[]>([]);
@@ -69,6 +95,164 @@ export const AdminSecurity = () => {
   const [blocked, setBlocked] = useState<BlockedIP[]>([]);
   const [loading, setLoading] = useState(false);
   const [newIPtoBlock, setNewIPtoBlock] = useState("");
+  const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
+
+  const performRealSecurityAudit = async (): Promise<AuditResult> => {
+    try {
+      // Buscar dados reais do CRM
+      const [profilesResponse, leadsResponse, transactionsResponse] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('leads').select('*'),
+        supabase.from('transactions').select('*')
+      ]);
+
+      const profiles = profilesResponse.data || [];
+      const leads = leadsResponse.data || [];
+      const transactions = transactionsResponse.data || [];
+
+      console.log('Dados para auditoria:', {
+        profiles: profiles.length,
+        leads: leads.length,
+        transactions: transactions.length
+      });
+
+      const vulnerabilities = [];
+      const warnings = [];
+      const recommendations = [];
+      let score = 100;
+
+      // Análise de vulnerabilidades críticas
+      const criticalSettingsDisabled = settings.filter(s => s.critical && !s.enabled);
+      if (criticalSettingsDisabled.length > 0) {
+        vulnerabilities.push({
+          severity: 'critical' as const,
+          title: 'Configurações Críticas Desabilitadas',
+          description: `${criticalSettingsDisabled.length} configurações críticas estão desabilitadas: ${criticalSettingsDisabled.map(s => s.label).join(', ')}`,
+          recommendation: 'Habilite imediatamente todas as configurações críticas de segurança'
+        });
+        score -= 30;
+      }
+
+      // Análise de usuários sem atividade recente
+      const inactiveUsers = profiles.filter(p => {
+        if (!p.last_login) return true;
+        const lastLogin = new Date(p.last_login);
+        const daysSinceLogin = (Date.now() - lastLogin.getTime()) / (1000 * 60 * 60 * 24);
+        return daysSinceLogin > 90;
+      });
+
+      if (inactiveUsers.length > 0) {
+        warnings.push({
+          title: 'Usuários Inativos Detectados',
+          description: `${inactiveUsers.length} usuários não fazem login há mais de 90 dias`,
+          recommendation: 'Revise e desative contas inativas para reduzir superfície de ataque'
+        });
+        score -= 10;
+      }
+
+      // Análise de leads com dados sensíveis
+      const leadsWithSensitiveData = leads.filter(l => l.phone || l.email || l.whatsapp);
+      if (leadsWithSensitiveData.length > 0 && !settings.find(s => s.key === 'data_encryption')?.enabled) {
+        vulnerabilities.push({
+          severity: 'high' as const,
+          title: 'Dados Sensíveis Sem Criptografia',
+          description: `${leadsWithSensitiveData.length} leads contêm dados pessoais sem criptografia adequada`,
+          recommendation: 'Ative a criptografia de dados sensíveis imediatamente'
+        });
+        score -= 20;
+      }
+
+      // Análise de transações financeiras
+      const highValueTransactions = transactions.filter(t => Math.abs(t.amount) > 10000);
+      if (highValueTransactions.length > 0) {
+        recommendations.push({
+          title: 'Transações de Alto Valor',
+          description: `${highValueTransactions.length} transações acima de R$ 10.000 detectadas`,
+          impact: 'Considere implementar autenticação adicional para transações de alto valor'
+        });
+      }
+
+      // Análise de atividade suspeita
+      const recentLeads = leads.filter(l => {
+        const createdAt = new Date(l.created_at);
+        const hoursAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+        return hoursAgo <= 24;
+      });
+
+      let suspiciousPatterns = 0;
+      if (recentLeads.length > 50) {
+        suspiciousPatterns++;
+        warnings.push({
+          title: 'Pico de Atividade Suspeito',
+          description: `${recentLeads.length} novos leads nas últimas 24 horas - possível atividade automatizada`,
+          recommendation: 'Monitore padrões de criação de leads e implemente CAPTCHAs se necessário'
+        });
+        score -= 5;
+      }
+
+      // Análise de IPs bloqueados
+      if (blocked.length === 0) {
+        recommendations.push({
+          title: 'Sistema de Bloqueio de IP',
+          description: 'Nenhum IP bloqueado detectado',
+          impact: 'Configure regras de bloqueio automático para IPs suspeitos'
+        });
+      }
+
+      // Análise de backup e recuperação
+      const hasBackupPolicy = settings.find(s => s.key === 'audit_log')?.enabled;
+      if (!hasBackupPolicy) {
+        vulnerabilities.push({
+          severity: 'medium' as const,
+          title: 'Política de Backup Inadequada',
+          description: 'Logs de auditoria não estão sendo mantidos adequadamente',
+          recommendation: 'Implemente política de backup e retenção de logs de segurança'
+        });
+        score -= 15;
+      }
+
+      // Recomendações baseadas no volume de dados
+      if (profiles.length > 100) {
+        recommendations.push({
+          title: 'Gerenciamento de Usuários em Escala',
+          description: `${profiles.length} perfis de usuários no sistema`,
+          impact: 'Considere implementar grupos de usuários e permissões granulares'
+        });
+      }
+
+      if (leads.length > 1000) {
+        recommendations.push({
+          title: 'Proteção de Dados em Escala',
+          description: `${leads.length} leads armazenados no sistema`,
+          impact: 'Implemente anonimização de dados antigos e políticas de retenção'
+        });
+      }
+
+      // Calcular score final
+      score = Math.max(0, Math.min(100, score));
+
+      const auditResult: AuditResult = {
+        score,
+        vulnerabilities,
+        warnings,
+        recommendations,
+        dataAnalysis: {
+          totalUsers: profiles.length,
+          totalLeads: leads.length,
+          totalTransactions: transactions.length,
+          recentActivity: recentLeads.length,
+          suspiciousPatterns
+        }
+      };
+
+      console.log('Resultado da auditoria real:', auditResult);
+      return auditResult;
+
+    } catch (error) {
+      console.error('Erro na auditoria de segurança:', error);
+      throw error;
+    }
+  };
 
   const generateSecurityEvents = async () => {
     try {
@@ -343,11 +527,13 @@ export const AdminSecurity = () => {
         events: events,
         blockedIPs: blocked,
         settings: settings,
+        auditResult: auditResult,
         summary: {
           totalEvents: events.length,
           criticalEvents: events.filter(e => e.status === 'blocked').length,
           blockedIPs: blocked.length,
-          enabledSettings: settings.filter(s => s.enabled).length
+          enabledSettings: settings.filter(s => s.enabled).length,
+          securityScore: auditResult?.score || 0
         }
       };
 
@@ -391,22 +577,35 @@ export const AdminSecurity = () => {
     setLoading(true);
     
     try {
-      // Simular auditoria completa
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const auditResults = {
-        vulnerabilities: Math.floor(Math.random() * 3),
-        warnings: Math.floor(Math.random() * 5) + 2,
-        recommendations: Math.floor(Math.random() * 8) + 5,
-        score: Math.floor(Math.random() * 20) + 80
+      toast({
+        title: "Iniciando Auditoria",
+        description: "Analisando dados reais do sistema...",
+      });
+
+      const result = await performRealSecurityAudit();
+      setAuditResult(result);
+
+      const severityCount = {
+        critical: result.vulnerabilities.filter(v => v.severity === 'critical').length,
+        high: result.vulnerabilities.filter(v => v.severity === 'high').length,
+        medium: result.vulnerabilities.filter(v => v.severity === 'medium').length,
+        low: result.vulnerabilities.filter(v => v.severity === 'low').length,
       };
 
       toast({
         title: "Auditoria Concluída",
-        description: `Score de segurança: ${auditResults.score}/100. ${auditResults.vulnerabilities} vulnerabilidades encontradas.`,
+        description: `Score: ${result.score}/100 | ${result.vulnerabilities.length} vulnerabilidades | ${result.warnings.length} avisos | ${result.recommendations.length} recomendações`,
       });
 
-      console.log('Resultado da auditoria:', auditResults);
+      console.log('Auditoria de segurança completa:', {
+        score: result.score,
+        vulnerabilities: result.vulnerabilities.length,
+        warnings: result.warnings.length,
+        recommendations: result.recommendations.length,
+        severity: severityCount,
+        dataAnalysis: result.dataAnalysis
+      });
+
     } catch (error) {
       console.error('Erro na auditoria:', error);
       toast({
@@ -473,7 +672,7 @@ export const AdminSecurity = () => {
             disabled={loading}
           >
             <Shield className="w-4 h-4 mr-2" />
-            {loading ? 'Auditando...' : 'Auditoria Completa'}
+            {loading ? 'Auditando...' : 'Auditoria Real'}
           </Button>
         </div>
       </div>
@@ -529,17 +728,108 @@ export const AdminSecurity = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Configurações</p>
-                <p className="text-2xl font-bold text-green-600">{enabledSettings}/{settings.length}</p>
+                <p className="text-sm font-medium text-gray-600">Score Segurança</p>
+                <p className={`text-2xl font-bold ${auditResult?.score >= 80 ? 'text-green-600' : auditResult?.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {auditResult?.score || '--'}/100
+                </p>
               </div>
               <Settings className="w-8 h-8 text-green-500" />
             </div>
             <div className="flex items-center mt-2">
-              <span className="text-sm text-gray-600">Ativas</span>
+              <span className="text-sm text-gray-600">Última auditoria</span>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Audit Results */}
+      {auditResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="w-5 h-5 mr-2" />
+              Resultado da Auditoria de Segurança
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Vulnerabilities */}
+              <div>
+                <h4 className="font-semibold text-red-600 mb-3">Vulnerabilidades ({auditResult.vulnerabilities.length})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {auditResult.vulnerabilities.map((vuln, index) => (
+                    <div key={index} className="p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
+                      <div className="flex items-center justify-between">
+                        <h5 className="font-medium text-red-800">{vuln.title}</h5>
+                        <Badge className={`${vuln.severity === 'critical' ? 'bg-red-600' : vuln.severity === 'high' ? 'bg-orange-600' : 'bg-yellow-600'} text-white`}>
+                          {vuln.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-red-700 mt-1">{vuln.description}</p>
+                      <p className="text-xs text-red-600 mt-2"><strong>Recomendação:</strong> {vuln.recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Warnings */}
+              <div>
+                <h4 className="font-semibold text-yellow-600 mb-3">Avisos ({auditResult.warnings.length})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {auditResult.warnings.map((warning, index) => (
+                    <div key={index} className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+                      <h5 className="font-medium text-yellow-800">{warning.title}</h5>
+                      <p className="text-sm text-yellow-700 mt-1">{warning.description}</p>
+                      <p className="text-xs text-yellow-600 mt-2"><strong>Recomendação:</strong> {warning.recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              <div>
+                <h4 className="font-semibold text-blue-600 mb-3">Recomendações ({auditResult.recommendations.length})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {auditResult.recommendations.map((rec, index) => (
+                    <div key={index} className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                      <h5 className="font-medium text-blue-800">{rec.title}</h5>
+                      <p className="text-sm text-blue-700 mt-1">{rec.description}</p>
+                      <p className="text-xs text-blue-600 mt-2"><strong>Impacto:</strong> {rec.impact}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Data Analysis Summary */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold text-gray-800 mb-3">Análise de Dados do Sistema</h4>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{auditResult.dataAnalysis.totalUsers}</p>
+                  <p className="text-sm text-gray-600">Usuários</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{auditResult.dataAnalysis.totalLeads}</p>
+                  <p className="text-sm text-gray-600">Leads</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{auditResult.dataAnalysis.totalTransactions}</p>
+                  <p className="text-sm text-gray-600">Transações</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{auditResult.dataAnalysis.recentActivity}</p>
+                  <p className="text-sm text-gray-600">Atividade 24h</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-red-600">{auditResult.dataAnalysis.suspiciousPatterns}</p>
+                  <p className="text-sm text-gray-600">Padrões Suspeitos</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Security Events */}
