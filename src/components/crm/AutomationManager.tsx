@@ -6,17 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { 
   Zap, 
-  Plus, 
   Play,
-  Pause,
   Settings,
   Mail,
   MessageCircle,
   Calendar,
   Users,
   Target,
-  Clock
+  Clock,
+  Trash2
 } from "lucide-react";
+import { NewAutomationDialog } from "./NewAutomationDialog";
+import { EditAutomationDialog } from "./EditAutomationDialog";
+import { executeAutomation } from "@/utils/automationService";
+import { useToast } from "@/hooks/use-toast";
 
 const mockAutomations = [
   {
@@ -25,6 +28,10 @@ const mockAutomations = [
     description: "Envia email de boas-vindas automaticamente para novos leads",
     trigger: "Novo Lead Criado",
     action: "Enviar Email",
+    triggerType: "new_lead",
+    actionType: "send_email",
+    message: "Olá! Bem-vindo ao nosso sistema. Em breve entraremos em contato.",
+    targetGroup: "leads",
     status: "Ativo",
     executions: 245,
     successRate: 98,
@@ -36,6 +43,11 @@ const mockAutomations = [
     description: "Envia mensagem no WhatsApp após 24h sem resposta",
     trigger: "Lead sem Resposta 24h",
     action: "Enviar WhatsApp",
+    triggerType: "time_based",
+    actionType: "send_whatsapp",
+    message: "Olá! Gostaria de saber se teve a chance de analisar nossa proposta.",
+    delay: "1440",
+    targetGroup: "leads",
     status: "Ativo",
     executions: 156,
     successRate: 87,
@@ -47,6 +59,9 @@ const mockAutomations = [
     description: "Agenda reunião automaticamente após interesse confirmado",
     trigger: "Lead Qualificado",
     action: "Agendar Reunião",
+    triggerType: "form_submitted",
+    actionType: "schedule_meeting",
+    targetGroup: "prospects",
     status: "Pausado",
     executions: 78,
     successRate: 92,
@@ -70,9 +85,23 @@ const actionTypes = [
 
 export const AutomationManager = () => {
   const [automations, setAutomations] = useState(mockAutomations);
+  const [editingAutomation, setEditingAutomation] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [executingAutomations, setExecutingAutomations] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
 
-  const handleNewAutomation = () => {
-    console.log("Criando nova automação...");
+  const handleCreateAutomation = (newAutomation: any) => {
+    setAutomations(prev => [...prev, newAutomation]);
+    console.log("Nova automação criada:", newAutomation);
+  };
+
+  const handleUpdateAutomation = (updatedAutomation: any) => {
+    setAutomations(prev => 
+      prev.map(automation => 
+        automation.id === updatedAutomation.id ? updatedAutomation : automation
+      )
+    );
+    console.log("Automação atualizada:", updatedAutomation);
   };
 
   const handleToggleAutomation = (automationId: number) => {
@@ -81,15 +110,106 @@ export const AutomationManager = () => {
         ? { ...automation, status: automation.status === "Ativo" ? "Pausado" : "Ativo" }
         : automation
     ));
-    console.log(`Alternando status da automação ${automationId}...`);
+    
+    const automation = automations.find(a => a.id === automationId);
+    const newStatus = automation?.status === "Ativo" ? "Pausado" : "Ativo";
+    
+    toast({
+      title: "Status Alterado",
+      description: `Automação "${automation?.name}" ${newStatus.toLowerCase()}`,
+    });
+    
+    console.log(`Alternando status da automação ${automationId} para ${newStatus}`);
   };
 
   const handleEditAutomation = (automationId: number) => {
-    console.log(`Editando automação ${automationId}...`);
+    const automation = automations.find(a => a.id === automationId);
+    if (automation) {
+      setEditingAutomation(automation);
+      setIsEditDialogOpen(true);
+    }
   };
 
-  const handleRunAutomation = (automationId: number) => {
-    console.log(`Executando automação ${automationId}...`);
+  const handleDeleteAutomation = (automationId: number) => {
+    const automation = automations.find(a => a.id === automationId);
+    if (automation && window.confirm(`Deseja realmente excluir a automação "${automation.name}"?`)) {
+      setAutomations(prev => prev.filter(a => a.id !== automationId));
+      toast({
+        title: "Automação Excluída",
+        description: `"${automation.name}" foi removida com sucesso`,
+      });
+    }
+  };
+
+  const handleRunAutomation = async (automationId: number) => {
+    const automation = automations.find(a => a.id === automationId);
+    if (!automation) return;
+
+    if (automation.status === "Pausado") {
+      toast({
+        title: "Erro",
+        description: "Não é possível executar uma automação pausada",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setExecutingAutomations(prev => new Set([...prev, automationId]));
+    
+    try {
+      console.log(`Executando automação: ${automation.name}`);
+      
+      toast({
+        title: "Executando Automação",
+        description: `Iniciando execução de "${automation.name}"...`,
+      });
+
+      const result = await executeAutomation(automation);
+      
+      // Atualizar estatísticas da automação
+      setAutomations(prev => 
+        prev.map(a => 
+          a.id === automationId 
+            ? { 
+                ...a, 
+                executions: a.executions + result.contactsReached,
+                successRate: result.success ? Math.min(100, a.successRate + 1) : Math.max(0, a.successRate - 1),
+                lastRun: new Date().toLocaleString('pt-BR')
+              }
+            : a
+        )
+      );
+
+      if (result.success) {
+        toast({
+          title: "Automação Executada",
+          description: `"${automation.name}" executada com sucesso! ${result.contactsReached} contatos alcançados.`,
+        });
+      } else {
+        toast({
+          title: "Erro na Execução",
+          description: result.details.join('\n'),
+          variant: "destructive"
+        });
+      }
+      
+      // Log detalhado dos resultados
+      console.log("Resultado da execução:", result);
+      
+    } catch (error) {
+      console.error("Erro ao executar automação:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao executar a automação",
+        variant: "destructive"
+      });
+    } finally {
+      setExecutingAutomations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(automationId);
+        return newSet;
+      });
+    }
   };
 
   const activeAutomations = automations.filter(a => a.status === "Ativo").length;
@@ -104,10 +224,7 @@ export const AutomationManager = () => {
           <h1 className="text-2xl font-bold text-gray-900">Automação</h1>
           <p className="text-gray-600">Configure automações para otimizar seu workflow</p>
         </div>
-        <Button onClick={handleNewAutomation} className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Automação
-        </Button>
+        <NewAutomationDialog onCreateAutomation={handleCreateAutomation} />
       </div>
 
       {/* Stats */}
@@ -211,19 +328,35 @@ export const AutomationManager = () => {
                   </div>
                 </div>
 
+                {automation.message && (
+                  <div className="mb-3 p-2 bg-gray-50 rounded text-sm">
+                    <span className="text-gray-600">Mensagem: </span>
+                    <span className="font-medium">{automation.message}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-500">
-                    Última execução: {automation.lastRun}
+                    {automation.lastRun ? `Última execução: ${automation.lastRun}` : "Nunca executada"}
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => handleRunAutomation(automation.id)}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleRunAutomation(automation.id)}
+                      disabled={executingAutomations.has(automation.id)}
+                    >
                       <Play className="w-4 h-4 mr-1" />
-                      Executar
+                      {executingAutomations.has(automation.id) ? "Executando..." : "Executar"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => handleEditAutomation(automation.id)}>
                       <Settings className="w-4 h-4 mr-1" />
                       Editar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDeleteAutomation(automation.id)}>
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Excluir
                     </Button>
                   </div>
                 </div>
@@ -277,6 +410,17 @@ export const AutomationManager = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Dialog */}
+      <EditAutomationDialog
+        automation={editingAutomation}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingAutomation(null);
+        }}
+        onUpdateAutomation={handleUpdateAutomation}
+      />
     </div>
   );
 };
