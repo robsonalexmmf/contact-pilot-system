@@ -10,16 +10,28 @@ import {
   Search, 
   Filter,
   Send,
-  Eye,
-  Download,
-  Edit,
   Calendar,
   DollarSign
 } from "lucide-react";
 import { NewProposalDialog } from "./NewProposalDialog";
+import { ProposalViewer } from "./ProposalViewer";
+import { ProposalEditor } from "./ProposalEditor";
 import { useToast } from "@/hooks/use-toast";
 
-const mockProposals = [
+interface Proposal {
+  id: number;
+  title: string;
+  client: string;
+  company: string;
+  value: number;
+  status: string;
+  createdAt: string;
+  validUntil: string;
+  template: string;
+  notes?: string;
+}
+
+const mockProposals: Proposal[] = [
   {
     id: 1,
     title: "Proposta Sistema ERP - Empresa XYZ",
@@ -29,7 +41,8 @@ const mockProposals = [
     status: "Enviada",
     createdAt: "2024-01-15",
     validUntil: "2024-02-15",
-    template: "ERP Standard"
+    template: "ERP Standard",
+    notes: "Cliente interessado em implementação completa do sistema ERP"
   },
   {
     id: 2,
@@ -40,7 +53,8 @@ const mockProposals = [
     status: "Rascunho",
     createdAt: "2024-01-14",
     validUntil: "2024-02-14",
-    template: "Consultoria"
+    template: "Consultoria",
+    notes: "Consultoria para otimização de infraestrutura"
   },
   {
     id: 3,
@@ -51,7 +65,8 @@ const mockProposals = [
     status: "Aceita",
     createdAt: "2024-01-10",
     validUntil: "2024-02-10",
-    template: "Desenvolvimento"
+    template: "Desenvolvimento",
+    notes: "Desenvolvimento de sistema de gestão personalizado"
   }
 ];
 
@@ -64,85 +79,63 @@ const statusColors: Record<string, string> = {
 };
 
 export const ProposalsManager = () => {
-  const [proposals, setProposals] = useState(mockProposals);
+  const [proposals, setProposals] = useState<Proposal[]>(mockProposals);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
 
   const handleCreateProposal = (newProposal: any) => {
-    setProposals(prev => [...prev, newProposal]);
-    console.log("Proposta adicionada:", newProposal);
+    const proposalWithNotes: Proposal = {
+      ...newProposal,
+      notes: newProposal.notes || ""
+    };
+    setProposals(prev => [...prev, proposalWithNotes]);
+    console.log("Nova proposta criada:", proposalWithNotes);
   };
 
-  const handleViewProposal = (proposalId: number) => {
+  const handleUpdateProposal = (updatedProposal: Proposal) => {
+    setProposals(prev => prev.map(p => 
+      p.id === updatedProposal.id ? updatedProposal : p
+    ));
+    console.log("Proposta atualizada:", updatedProposal);
+  };
+
+  const handleStatusUpdate = (proposalId: number, newStatus: string) => {
+    setProposals(prev => prev.map(p => 
+      p.id === proposalId ? { ...p, status: newStatus } : p
+    ));
+    
     const proposal = proposals.find(p => p.id === proposalId);
-    console.log(`Visualizando proposta ${proposalId}:`, proposal);
+    console.log(`Status da proposta ${proposalId} atualizado para: ${newStatus}`);
+    
     toast({
-      title: "Proposta Visualizada",
-      description: `Abrindo visualização da proposta ${proposal?.title}`,
+      title: "Status Atualizado",
+      description: `Proposta "${proposal?.title}" agora está "${newStatus}"`,
     });
   };
 
   const handleEditProposal = (proposalId: number) => {
     const proposal = proposals.find(p => p.id === proposalId);
-    console.log(`Editando proposta ${proposalId}:`, proposal);
-    toast({
-      title: "Editar Proposta",
-      description: `Abrindo editor para ${proposal?.title}`,
-    });
-  };
-
-  const handleSendProposal = (proposalId: number) => {
-    const proposal = proposals.find(p => p.id === proposalId);
-    if (proposal) {
-      // Atualizar status para "Enviada"
-      setProposals(prev => prev.map(p => 
-        p.id === proposalId ? { ...p, status: "Enviada" } : p
-      ));
-      
-      console.log(`Enviando proposta ${proposalId}:`, proposal);
-      toast({
-        title: "Proposta Enviada",
-        description: `${proposal.title} foi enviada com sucesso`,
-      });
-    }
-  };
-
-  const handleDownloadProposal = (proposalId: number) => {
-    const proposal = proposals.find(p => p.id === proposalId);
-    console.log(`Baixando PDF da proposta ${proposalId}:`, proposal);
-    toast({
-      title: "Download Iniciado",
-      description: `Gerando PDF de ${proposal?.title}`,
-    });
-    
-    // Simular download
-    setTimeout(() => {
-      const link = document.createElement('a');
-      link.href = '#';
-      link.download = `proposta-${proposalId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }, 1000);
-  };
-
-  const handleFilterChange = () => {
-    console.log("Abrindo filtros avançados...");
-    toast({
-      title: "Filtros",
-      description: "Funcionalidade de filtros será implementada em breve",
-    });
+    console.log(`Iniciando edição da proposta ${proposalId}:`, proposal);
   };
 
   const filteredProposals = proposals.filter(proposal => {
     const matchesSearch = proposal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         proposal.client.toLowerCase().includes(searchTerm.toLowerCase());
+                         proposal.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         proposal.company.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || proposal.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
+
+  // Calcular estatísticas dinâmicas
+  const stats = {
+    total: proposals.length,
+    enviadas: proposals.filter(p => p.status === "Enviada").length,
+    aceitas: proposals.filter(p => p.status === "Aceita").length,
+    valorTotal: proposals.reduce((sum, p) => sum + p.value, 0)
+  };
 
   return (
     <div className="space-y-6">
@@ -155,14 +148,14 @@ export const ProposalsManager = () => {
         <NewProposalDialog onCreateProposal={handleCreateProposal} />
       </div>
 
-      {/* Stats */}
+      {/* Stats Dinâmicas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-blue-600">{proposals.length}</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
               </div>
               <FileText className="w-8 h-8 text-blue-500" />
             </div>
@@ -174,9 +167,7 @@ export const ProposalsManager = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Enviadas</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {proposals.filter(p => p.status === "Enviada").length}
-                </p>
+                <p className="text-2xl font-bold text-yellow-600">{stats.enviadas}</p>
               </div>
               <Send className="w-8 h-8 text-yellow-500" />
             </div>
@@ -188,9 +179,7 @@ export const ProposalsManager = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Aceitas</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {proposals.filter(p => p.status === "Aceita").length}
-                </p>
+                <p className="text-2xl font-bold text-green-600">{stats.aceitas}</p>
               </div>
               <Calendar className="w-8 h-8 text-green-500" />
             </div>
@@ -203,7 +192,7 @@ export const ProposalsManager = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Valor Total</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  R$ {proposals.reduce((sum, p) => sum + p.value, 0).toLocaleString()}
+                  R$ {stats.valorTotal.toLocaleString()}
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-purple-500" />
@@ -212,12 +201,12 @@ export const ProposalsManager = () => {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filtros Funcionais */}
       <div className="flex space-x-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Buscar propostas..."
+            placeholder="Buscar por título, cliente ou empresa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -230,38 +219,33 @@ export const ProposalsManager = () => {
             size="sm"
             onClick={() => setStatusFilter("all")}
           >
-            Todas
+            Todas ({proposals.length})
           </Button>
           <Button
             variant={statusFilter === "Rascunho" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("Rascunho")}
           >
-            Rascunhos
+            Rascunhos ({proposals.filter(p => p.status === "Rascunho").length})
           </Button>
           <Button
             variant={statusFilter === "Enviada" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("Enviada")}
           >
-            Enviadas
+            Enviadas ({proposals.filter(p => p.status === "Enviada").length})
           </Button>
           <Button
             variant={statusFilter === "Aceita" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("Aceita")}
           >
-            Aceitas
+            Aceitas ({proposals.filter(p => p.status === "Aceita").length})
           </Button>
         </div>
-        
-        <Button variant="outline" onClick={handleFilterChange}>
-          <Filter className="w-4 h-4 mr-2" />
-          Filtros
-        </Button>
       </div>
 
-      {/* Proposals List */}
+      {/* Lista de Propostas com Componentes Funcionais */}
       <div className="space-y-4">
         {filteredProposals.map((proposal) => (
           <Card key={proposal.id} className="hover:shadow-md transition-shadow">
@@ -294,6 +278,12 @@ export const ProposalsManager = () => {
                     </div>
                   </div>
 
+                  {proposal.notes && (
+                    <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                      <span className="text-sm text-gray-700">{proposal.notes}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500">
                       <Calendar className="w-4 h-4 inline mr-1" />
@@ -301,27 +291,15 @@ export const ProposalsManager = () => {
                     </div>
                     
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => handleViewProposal(proposal.id)}>
-                        <Eye className="w-4 h-4 mr-1" />
-                        Ver
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleEditProposal(proposal.id)}>
-                        <Edit className="w-4 h-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleSendProposal(proposal.id)}
-                        disabled={proposal.status === "Aceita"}
-                      >
-                        <Send className="w-4 h-4 mr-1" />
-                        Enviar
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDownloadProposal(proposal.id)}>
-                        <Download className="w-4 h-4 mr-1" />
-                        PDF
-                      </Button>
+                      <ProposalViewer 
+                        proposal={proposal}
+                        onStatusUpdate={handleStatusUpdate}
+                        onEdit={handleEditProposal}
+                      />
+                      <ProposalEditor 
+                        proposal={proposal}
+                        onUpdateProposal={handleUpdateProposal}
+                      />
                     </div>
                   </div>
                 </div>

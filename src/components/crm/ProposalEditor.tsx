@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,27 +14,57 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface NewProposalDialogProps {
-  onCreateProposal: (proposal: any) => void;
+interface Proposal {
+  id: number;
+  title: string;
+  client: string;
+  company: string;
+  value: number;
+  status: string;
+  createdAt: string;
+  validUntil: string;
+  template: string;
+  notes?: string;
+}
+
+interface ProposalEditorProps {
+  proposal: Proposal;
+  onUpdateProposal: (updatedProposal: Proposal) => void;
   trigger?: React.ReactNode;
 }
 
-export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDialogProps) => {
+export const ProposalEditor = ({ proposal, onUpdateProposal, trigger }: ProposalEditorProps) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
-    client: "",
-    company: "",
-    value: "",
-    template: "ERP Standard",
-    validUntil: "",
-    notes: ""
+    title: proposal.title,
+    client: proposal.client,
+    company: proposal.company,
+    value: proposal.value.toString(),
+    template: proposal.template,
+    validUntil: proposal.validUntil,
+    notes: proposal.notes || "",
+    status: proposal.status
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        title: proposal.title,
+        client: proposal.client,
+        company: proposal.company,
+        value: proposal.value.toString(),
+        template: proposal.template,
+        validUntil: proposal.validUntil,
+        notes: proposal.notes || "",
+        status: proposal.status
+      });
+    }
+  }, [open, proposal]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -55,44 +85,32 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
     setIsSubmitting(true);
     
     try {
-      const newProposal = {
-        id: Date.now(),
+      const updatedProposal: Proposal = {
+        ...proposal,
         title: formData.title,
         client: formData.client,
         company: formData.company || formData.client,
         value: parseInt(formData.value) || 0,
-        status: "Rascunho",
-        createdAt: new Date().toISOString().split('T')[0],
-        validUntil: formData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        validUntil: formData.validUntil,
         template: formData.template,
-        notes: formData.notes
+        notes: formData.notes,
+        status: formData.status
       };
 
-      console.log("Criando nova proposta:", newProposal);
-      onCreateProposal(newProposal);
+      console.log("Atualizando proposta:", updatedProposal);
+      onUpdateProposal(updatedProposal);
 
       toast({
         title: "Sucesso",
-        description: `Proposta "${formData.title}" criada com sucesso`,
-      });
-
-      // Reset form
-      setFormData({
-        title: "",
-        client: "",
-        company: "",
-        value: "",
-        template: "ERP Standard",
-        validUntil: "",
-        notes: ""
+        description: `Proposta "${formData.title}" foi atualizada com sucesso`,
       });
       
       setOpen(false);
     } catch (error) {
-      console.error("Erro ao criar proposta:", error);
+      console.error("Erro ao atualizar proposta:", error);
       toast({
         title: "Erro",
-        description: "Erro ao criar proposta",
+        description: "Erro ao atualizar proposta",
         variant: "destructive"
       });
     } finally {
@@ -104,25 +122,25 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Proposta
+          <Button size="sm" variant="outline">
+            <Edit className="w-4 h-4 mr-1" />
+            Editar
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Proposta</DialogTitle>
+          <DialogTitle>Editar Proposta</DialogTitle>
           <DialogDescription>
-            Preencha as informações da nova proposta comercial
+            Atualize as informações da proposta comercial
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Título *</Label>
+              <Label htmlFor="edit-title">Título *</Label>
               <Input
-                id="title"
+                id="edit-title"
                 value={formData.title}
                 onChange={(e) => handleInputChange("title", e.target.value)}
                 placeholder="Nome da proposta"
@@ -132,9 +150,9 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="client">Cliente *</Label>
+                <Label htmlFor="edit-client">Cliente *</Label>
                 <Input
-                  id="client"
+                  id="edit-client"
                   value={formData.client}
                   onChange={(e) => handleInputChange("client", e.target.value)}
                   placeholder="Nome do cliente"
@@ -142,9 +160,9 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="company">Empresa</Label>
+                <Label htmlFor="edit-company">Empresa</Label>
                 <Input
-                  id="company"
+                  id="edit-company"
                   value={formData.company}
                   onChange={(e) => handleInputChange("company", e.target.value)}
                   placeholder="Nome da empresa"
@@ -154,9 +172,9 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="value">Valor *</Label>
+                <Label htmlFor="edit-value">Valor *</Label>
                 <Input
-                  id="value"
+                  id="edit-value"
                   type="number"
                   value={formData.value}
                   onChange={(e) => handleInputChange("value", e.target.value)}
@@ -165,7 +183,7 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="template">Template</Label>
+                <Label htmlFor="edit-template">Template</Label>
                 <Select value={formData.template} onValueChange={(value) => handleInputChange("template", value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o template" />
@@ -180,20 +198,37 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="validUntil">Válida até</Label>
-              <Input
-                id="validUntil"
-                type="date"
-                value={formData.validUntil}
-                onChange={(e) => handleInputChange("validUntil", e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-validUntil">Válida até</Label>
+                <Input
+                  id="edit-validUntil"
+                  type="date"
+                  value={formData.validUntil}
+                  onChange={(e) => handleInputChange("validUntil", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Rascunho">Rascunho</SelectItem>
+                    <SelectItem value="Enviada">Enviada</SelectItem>
+                    <SelectItem value="Visualizada">Visualizada</SelectItem>
+                    <SelectItem value="Aceita">Aceita</SelectItem>
+                    <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
+              <Label htmlFor="edit-notes">Observações</Label>
               <Textarea
-                id="notes"
+                id="edit-notes"
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
                 placeholder="Informações adicionais sobre a proposta"
@@ -206,7 +241,7 @@ export const NewProposalDialog = ({ onCreateProposal, trigger }: NewProposalDial
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Criando..." : "Criar Proposta"}
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </form>
