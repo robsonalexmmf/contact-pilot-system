@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -49,6 +48,8 @@ interface NewAutomationDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (automation: any) => void;
+  preselectedTrigger?: string;
+  preselectedAction?: string;
 }
 
 const advancedAutomations = [
@@ -286,13 +287,13 @@ const categoryColors = {
   integração: 'bg-teal-100 text-teal-800'
 };
 
-export const NewAutomationDialog = ({ open, onClose, onSave }: NewAutomationDialogProps) => {
+export const NewAutomationDialog = ({ open, onClose, onSave, preselectedTrigger = "", preselectedAction = "" }: NewAutomationDialogProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    trigger_type: '',
-    action_type: '',
+    trigger_type: preselectedTrigger,
+    action_type: preselectedAction,
     message: '',
     delay_minutes: 0,
     target_group: 'all',
