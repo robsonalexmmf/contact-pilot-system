@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,8 +102,8 @@ export const AdminBilling = () => {
       const pendingTransactions = filteredTransactions.filter(t => t.status === 'pending').length;
       const failedTransactions = filteredTransactions.filter(t => t.status === 'failed').length;
 
-      // Group by plan
-      const planStats = filteredTransactions.reduce((acc, t) => {
+      // Group by plan with proper typing
+      const planStats = filteredTransactions.reduce((acc: Record<string, { count: number; revenue: number }>, t) => {
         if (!acc[t.plan]) acc[t.plan] = { count: 0, revenue: 0 };
         acc[t.plan].count++;
         if (t.status === 'paid') acc[t.plan].revenue += t.amount;
