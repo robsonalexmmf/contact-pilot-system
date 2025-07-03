@@ -13,6 +13,12 @@ import { AutomationManager } from "@/components/crm/AutomationManager";
 import { Reports } from "@/components/crm/Reports";
 import { Settings } from "@/components/crm/Settings";
 import { ChatInterface } from "@/components/crm/ChatInterface";
+import { HelpDesk } from "@/components/crm/HelpDesk";
+import { CustomerSuccess } from "@/components/crm/CustomerSuccess";
+import { ProductManager } from "@/components/crm/ProductManager";
+import { UserManagement } from "@/components/crm/UserManagement";
+import { Integrations } from "@/components/crm/Integrations";
+import { AICopilot } from "@/components/crm/AICopilot";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -42,6 +48,18 @@ const Index = () => {
         return <Settings />;
       case "chat":
         return <ChatInterface />;
+      case "helpdesk":
+        return <HelpDesk />;
+      case "customer-success":
+        return <CustomerSuccess />;
+      case "products":
+        return <ProductManager />;
+      case "users":
+        return <UserManagement />;
+      case "integrations":
+        return <Integrations />;
+      case "ai-copilot":
+        return <AICopilot />;
       default:
         return <Dashboard />;
     }
