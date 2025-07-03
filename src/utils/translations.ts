@@ -60,6 +60,14 @@ export const translations = {
     errorSavingDesc: 'Ocorreu um erro ao salvar suas configurações. Tente novamente.',
     confirmExit: 'Você tem alterações não salvas. Deseja realmente sair?',
     
+    // UserDropdown
+    myProfile: 'Meu Perfil',
+    billing: 'Faturamento',
+    helpSupport: 'Ajuda & Suporte',
+    logout: 'Sair',
+    confirmLogout: 'Tem certeza que deseja sair?',
+    loggedOut: 'Logout realizado',
+    
     // Sidebar
     systemComplete: 'Sistema Completo',
     premiumPlan: 'Plano Premium',
@@ -127,6 +135,14 @@ export const translations = {
     errorSavingDesc: 'An error occurred while saving your settings. Please try again.',
     confirmExit: 'You have unsaved changes. Do you really want to exit?',
     
+    // UserDropdown
+    myProfile: 'My Profile',
+    billing: 'Billing',
+    helpSupport: 'Help & Support',
+    logout: 'Logout',
+    confirmLogout: 'Are you sure you want to logout?',
+    loggedOut: 'Successfully logged out',
+    
     // Sidebar
     systemComplete: 'Complete System',
     premiumPlan: 'Premium Plan',
@@ -193,6 +209,14 @@ export const translations = {
     errorSaving: 'Error al guardar',
     errorSavingDesc: 'Ocurrió un error al guardar tu configuración. Inténtalo de nuevo.',
     confirmExit: 'Tienes cambios no guardados. ¿Realmente quieres salir?',
+    
+    // UserDropdown
+    myProfile: 'Mi Perfil',
+    billing: 'Facturación',
+    helpSupport: 'Ayuda y Soporte',
+    logout: 'Cerrar Sesión',
+    confirmLogout: '¿Estás seguro que quieres cerrar sesión?',
+    loggedOut: 'Sesión cerrada exitosamente',
     
     // Sidebar
     systemComplete: 'Sistema Completo',

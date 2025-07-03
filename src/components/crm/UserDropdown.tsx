@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import { UserProfileDialog } from "./UserProfileDialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { BillingDialog } from "./BillingDialog";
 import { HelpDialog } from "./HelpDialog";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface UserDropdownProps {
   userName: string;
@@ -32,6 +33,18 @@ export const UserDropdown = ({ userName, userRole }: UserDropdownProps) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const { t } = useLanguage();
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes to force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, []);
 
   const handleMenuAction = (action: string) => {
     console.log(`Ação do menu do usuário: ${action}`);
@@ -50,8 +63,8 @@ export const UserDropdown = ({ userName, userRole }: UserDropdownProps) => {
         setHelpOpen(true);
         break;
       case 'logout':
-        if (confirm('Tem certeza que deseja sair?')) {
-          alert('Logout realizado');
+        if (confirm(t('confirmLogout'))) {
+          alert(t('loggedOut'));
         }
         break;
     }
@@ -85,24 +98,24 @@ export const UserDropdown = ({ userName, userRole }: UserDropdownProps) => {
           
           <DropdownMenuItem onClick={() => handleMenuAction('profile')} className="cursor-pointer">
             <UserCircle className="w-4 h-4 mr-2" />
-            Meu Perfil
+            {t('myProfile')}
           </DropdownMenuItem>
           
           <DropdownMenuItem onClick={() => handleMenuAction('settings')} className="cursor-pointer">
             <Settings className="w-4 h-4 mr-2" />
-            Configurações
+            {t('settings')}
           </DropdownMenuItem>
           
           <DropdownMenuItem onClick={() => handleMenuAction('billing')} className="cursor-pointer">
             <CreditCard className="w-4 h-4 mr-2" />
-            Faturamento
+            {t('billing')}
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
           
           <DropdownMenuItem onClick={() => handleMenuAction('help')} className="cursor-pointer">
             <HelpCircle className="w-4 h-4 mr-2" />
-            Ajuda & Suporte
+            {t('helpSupport')}
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
@@ -112,7 +125,7 @@ export const UserDropdown = ({ userName, userRole }: UserDropdownProps) => {
             className="cursor-pointer text-red-600 focus:text-red-600"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sair
+            {t('logout')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
