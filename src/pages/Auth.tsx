@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,10 +31,12 @@ export default function Auth() {
         navigate('/app');
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, selectedPlan]);
 
   const handlePaymentRedirect = async () => {
     if (!user || !selectedPlan) return;
+    
+    console.log('Redirecionando para pagamento...', { user: user.email, plan: selectedPlan });
     
     try {
       const { createPayment, getPaymentAmount } = await import('@/services/mercadoPagoService');
@@ -45,6 +48,8 @@ export default function Auth() {
         planType: selectedPlan as 'pro' | 'premium'
       };
 
+      console.log('Criando pagamento com dados:', paymentData);
+
       const response = await createPayment(paymentData);
       
       if (response.success && response.redirectUrl) {
@@ -52,8 +57,17 @@ export default function Auth() {
         localStorage.setItem('payment_user_email', user.email || '');
         localStorage.setItem('payment_plan_type', selectedPlan);
         
+        console.log('Redirecionando para:', response.redirectUrl);
+        
         // Redirecionar para página de sucesso
         window.location.href = response.redirectUrl;
+      } else {
+        console.error('Erro na resposta do pagamento:', response);
+        toast({
+          title: "Erro no pagamento",
+          description: response.error || "Não foi possível processar o pagamento",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
@@ -130,9 +144,15 @@ export default function Auth() {
       toast({
         title: "Cadastro realizado!",
         description: selectedPlan 
-          ? "Verifique seu email para confirmar a conta. Após confirmar, você será direcionado para o pagamento."
+          ? "Aguarde, redirecionando para o pagamento..."
           : "Verifique seu email para confirmar a conta antes de continuar."
       });
+      
+      // Se há plano selecionado, aguardar um momento para o usuário ser autenticado
+      // O useEffect acima cuidará do redirecionamento
+      if (selectedPlan) {
+        console.log('Cadastro realizado, aguardando autenticação para redirecionar...');
+      }
     }
     
     setIsLoading(false);
@@ -154,7 +174,7 @@ export default function Auth() {
               <CheckCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
                 <strong>Plano selecionado:</strong> {selectedPlan === 'pro' ? 'Pro (R$ 97/mês)' : 'Premium (R$ 197/mês)'}
-                <br />Após o cadastro, você será direcionado para o pagamento.
+                <br />Após o cadastro, você será direcionado automaticamente para o pagamento.
               </AlertDescription>
             </Alert>
           )}
@@ -163,7 +183,7 @@ export default function Auth() {
           <Alert className="mb-6 border-orange-200 bg-orange-50">
             <Mail className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
-              <strong>Importante:</strong> Após se cadastrar, confirme seu email para ter acesso completo ao CRM.
+              <strong>⚠️ IMPORTANTE:</strong> Confirme seu email para ter acesso ao CRM. Sem confirmação, você não conseguirá fazer login.
             </AlertDescription>
           </Alert>
 
@@ -263,7 +283,7 @@ export default function Auth() {
                       Criando conta...
                     </>
                   ) : (
-                    selectedPlan ? 'Cadastrar e Continuar para Pagamento' : 'Criar Conta'
+                    selectedPlan ? 'Cadastrar e Prosseguir para Pagamento' : 'Criar Conta'
                   )}
                 </Button>
               </form>

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { AlertCircle, Key, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { mercadoPagoService } from "@/services/mercadoPagoService";
+import { createPayment } from "@/services/mercadoPagoService";
 
 export function MercadoPagoSettings() {
   const [accessToken, setAccessToken] = useState('');
@@ -24,8 +24,6 @@ export function MercadoPagoSettings() {
     if (savedToken) {
       setAccessToken(savedToken);
       setIsConfigured(true);
-      mercadoPagoService.setAccessToken(savedToken);
-      mercadoPagoService.setEnvironment(savedEnv);
     }
     setIsProduction(savedEnv);
   }, []);
@@ -38,9 +36,6 @@ export function MercadoPagoSettings() {
 
     localStorage.setItem('mercadopago_access_token', accessToken);
     localStorage.setItem('mercadopago_environment', isProduction ? 'production' : 'sandbox');
-    
-    mercadoPagoService.setAccessToken(accessToken);
-    mercadoPagoService.setEnvironment(isProduction);
     
     setIsConfigured(true);
     setTestResult('Configurações salvas com sucesso!');
@@ -56,12 +51,12 @@ export function MercadoPagoSettings() {
     setTestResult('');
 
     try {
-      // Teste simples: tentar criar uma preferência de teste
-      await mercadoPagoService.createPreference({
-        title: 'Teste de Conexão',
-        quantity: 1,
-        unit_price: 0.01,
-        plan_type: 'pro'
+      // Teste simples: tentar criar um pagamento de teste
+      await createPayment({
+        amount: 0.01,
+        description: 'Teste de Conexão',
+        userEmail: 'test@test.com',
+        planType: 'pro'
       });
       
       setTestResult('✅ Conexão com Mercado Pago estabelecida com sucesso!');
