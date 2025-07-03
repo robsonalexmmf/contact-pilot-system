@@ -35,6 +35,10 @@ import { ComplianceManager } from "@/components/crm/ComplianceManager";
 import { PlanLimitDialog } from "@/components/crm/PlanLimitDialog";
 import { isPlanActive, getUsageInfo, isFeatureAvailable } from "@/utils/planService";
 import { AdminDashboard } from "@/components/crm/AdminDashboard";
+import { AdminUserManagement } from "@/components/crm/AdminUserManagement";
+import { AdminSystem } from "@/components/crm/AdminSystem";
+import { AdminMonitoring } from "@/components/crm/AdminMonitoring";
+import { AdminBilling } from "@/components/crm/AdminBilling";
 import { isAdminUser } from "@/utils/testUsers";
 import { AdminSidebar } from "@/components/crm/AdminSidebar";
 import { AdminHeader } from "@/components/crm/AdminHeader";
@@ -130,13 +134,13 @@ const Index = () => {
         case "admin-dashboard":
           return <AdminDashboard />;
         case "admin-users":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Gerenciar Usuários</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminUserManagement />;
         case "admin-system":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Sistema</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminSystem />;
         case "admin-monitoring":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Monitoramento</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminMonitoring />;
         case "admin-billing":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Faturamento</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminBilling />;
         case "admin-reports":
           return <div className="p-6"><h2 className="text-2xl font-bold">Relatórios Admin</h2><p>Módulo em desenvolvimento</p></div>;
         case "admin-notifications":
