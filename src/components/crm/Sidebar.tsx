@@ -13,6 +13,7 @@ import {
   DollarSign,
   Zap
 } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SidebarProps {
   activeModule: string;
@@ -21,21 +22,23 @@ interface SidebarProps {
   setIsOpen: (open: boolean) => void;
 }
 
-const menuItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "leads", label: "Leads & Contatos", icon: Users },
-  { id: "pipeline", label: "Pipeline de Vendas", icon: Target },
-  { id: "tasks", label: "Tarefas", icon: CheckSquare },
-  { id: "proposals", label: "Propostas", icon: FileText },
-  { id: "calendar", label: "Agenda", icon: Calendar },
-  { id: "financial", label: "Financeiro", icon: DollarSign },
-  { id: "automation", label: "Automação", icon: Zap },
-  { id: "chat", label: "Chat", icon: MessageCircle },
-  { id: "reports", label: "Relatórios", icon: BarChart3 },
-  { id: "settings", label: "Configurações", icon: Settings },
-];
-
 export const Sidebar = ({ activeModule, setActiveModule, isOpen }: SidebarProps) => {
+  const { t } = useLanguage();
+
+  const menuItems = [
+    { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard },
+    { id: "leads", label: t("leads"), icon: Users },
+    { id: "pipeline", label: t("pipeline"), icon: Target },
+    { id: "tasks", label: t("tasks"), icon: CheckSquare },
+    { id: "proposals", label: t("proposals"), icon: FileText },
+    { id: "calendar", label: t("calendar"), icon: Calendar },
+    { id: "financial", label: t("financial"), icon: DollarSign },
+    { id: "automation", label: t("automation"), icon: Zap },
+    { id: "chat", label: t("chat"), icon: MessageCircle },
+    { id: "reports", label: t("reports"), icon: BarChart3 },
+    { id: "settings", label: t("settings"), icon: Settings },
+  ];
+
   return (
     <div className={cn(
       "fixed left-0 top-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 z-40",
@@ -49,7 +52,7 @@ export const Sidebar = ({ activeModule, setActiveModule, isOpen }: SidebarProps)
           {isOpen && (
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Salesin Pro</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Sistema Completo</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('systemComplete')}</p>
             </div>
           )}
         </div>
@@ -85,13 +88,13 @@ export const Sidebar = ({ activeModule, setActiveModule, isOpen }: SidebarProps)
         <div className="absolute bottom-4 left-4 right-4">
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 p-4 rounded-lg border dark:border-gray-700">
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-              Plano Premium
+              {t('premiumPlan')}
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
-              Recursos ilimitados
+              {t('unlimitedResources')}
             </p>
             <button className="w-full text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white py-1.5 rounded-md hover:from-blue-700 hover:to-purple-700 transition-colors">
-              Gerenciar Plano
+              {t('managePlan')}
             </button>
           </div>
         </div>

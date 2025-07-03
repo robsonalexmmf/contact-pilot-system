@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -13,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -63,6 +63,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
+  const { t, setLanguage } = useLanguage();
 
   // Carregar configurações do localStorage ao abrir o dialog
   useEffect(() => {
@@ -88,6 +89,11 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
   useEffect(() => {
     applyTheme(settings.appearance.theme);
   }, [settings.appearance.theme]);
+
+  // Aplicar idioma quando mudança for detectada
+  useEffect(() => {
+    setLanguage(settings.appearance.language as any);
+  }, [settings.appearance.language, setLanguage]);
 
   const applyTheme = (theme: string) => {
     const root = document.documentElement;
@@ -151,8 +157,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
       console.log("Configurações salvas:", settings);
       
       toast({
-        title: "Configurações salvas!",
-        description: "Suas preferências foram atualizadas com sucesso.",
+        title: t('settingsSaved'),
+        description: t('settingsSavedDesc'),
       });
       
       setHasChanges(false);
@@ -160,8 +166,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
       toast({
-        title: "Erro ao salvar",
-        description: "Ocorreu um erro ao salvar suas configurações. Tente novamente.",
+        title: t('errorSaving'),
+        description: t('errorSavingDesc'),
         variant: "destructive"
       });
     }
@@ -169,7 +175,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
   const handleCancel = () => {
     if (hasChanges) {
-      const confirm = window.confirm('Você tem alterações não salvas. Deseja realmente sair?');
+      const confirm = window.confirm(t('confirmExit'));
       if (!confirm) return;
     }
     onClose();
@@ -179,27 +185,27 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent className="sm:max-w-[600px] sm:max-h-[700px]">
         <DialogHeader>
-          <DialogTitle>Configurações</DialogTitle>
+          <DialogTitle>{t('settingsTitle')}</DialogTitle>
           <DialogDescription>
-            Gerencie suas preferências e configurações do sistema.
+            {t('settingsDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="notifications" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="notifications">Notificações</TabsTrigger>
-            <TabsTrigger value="appearance">Aparência</TabsTrigger>
-            <TabsTrigger value="privacy">Privacidade</TabsTrigger>
+            <TabsTrigger value="notifications">{t('notifications')}</TabsTrigger>
+            <TabsTrigger value="appearance">{t('appearance')}</TabsTrigger>
+            <TabsTrigger value="privacy">{t('privacy')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="notifications" className="space-y-4">
             <div className="space-y-4">
-              <h4 className="font-medium">Tipos de Notificação</h4>
+              <h4 className="font-medium">{t('notificationTypes')}</h4>
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Notificações por Email</Label>
-                  <p className="text-sm text-gray-500">Receber notificações por email</p>
+                  <Label>{t('emailNotifications')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('emailNotificationsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.email}
@@ -209,8 +215,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Notificações Push</Label>
-                  <p className="text-sm text-gray-500">Notificações no navegador</p>
+                  <Label>{t('pushNotifications')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('pushNotificationsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.push}
@@ -220,8 +226,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Notificações Desktop</Label>
-                  <p className="text-sm text-gray-500">Notificações na área de trabalho</p>
+                  <Label>{t('desktopNotifications')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('desktopNotificationsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.desktop}
@@ -231,8 +237,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Atualizações de Leads</Label>
-                  <p className="text-sm text-gray-500">Notificar sobre novos leads</p>
+                  <Label>{t('leadUpdates')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('leadUpdatesDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.leadUpdates}
@@ -242,8 +248,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Lembretes de Tarefas</Label>
-                  <p className="text-sm text-gray-500">Notificar sobre tarefas pendentes</p>
+                  <Label>{t('taskReminders')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('taskRemindersDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.taskReminders}
@@ -256,7 +262,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
           <TabsContent value="appearance" className="space-y-4">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Tema</Label>
+                <Label>{t('theme')}</Label>
                 <Select
                   value={settings.appearance.theme}
                   onValueChange={(value) => handleAppearanceChange('theme', value)}
@@ -265,15 +271,15 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="light">Claro</SelectItem>
-                    <SelectItem value="dark">Escuro</SelectItem>
-                    <SelectItem value="system">Sistema</SelectItem>
+                    <SelectItem value="light">{t('themeLight')}</SelectItem>
+                    <SelectItem value="dark">{t('themeDark')}</SelectItem>
+                    <SelectItem value="system">{t('themeSystem')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Idioma</Label>
+                <Label>{t('language')}</Label>
                 <Select
                   value={settings.appearance.language}
                   onValueChange={(value) => handleAppearanceChange('language', value)}
@@ -290,7 +296,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label>Fuso Horário</Label>
+                <Label>{t('timezone')}</Label>
                 <Select
                   value={settings.appearance.timezone}
                   onValueChange={(value) => handleAppearanceChange('timezone', value)}
@@ -314,8 +320,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Mostrar Status Online</Label>
-                  <p className="text-sm text-gray-500">Outros usuários podem ver quando você está online</p>
+                  <Label>{t('showOnlineStatus')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('showOnlineStatusDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.privacy.showOnlineStatus}
@@ -325,8 +331,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Coleta de Dados</Label>
-                  <p className="text-sm text-gray-500">Permitir coleta de dados para melhorar o produto</p>
+                  <Label>{t('allowDataCollection')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('allowDataCollectionDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.privacy.allowDataCollection}
@@ -336,8 +342,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Compartilhar Analytics</Label>
-                  <p className="text-sm text-gray-500">Ajudar a melhorar o produto compartilhando dados de uso</p>
+                  <Label>{t('shareAnalytics')}</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('shareAnalyticsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.privacy.shareAnalytics}
@@ -348,20 +354,20 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="text-sm text-gray-500">
-            {hasChanges && "• Alterações não salvas"}
+        <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {hasChanges && t('unsavedChanges')}
           </div>
           <div className="flex space-x-2">
             <Button variant="outline" onClick={handleCancel}>
-              Cancelar
+              {t('cancel')}
             </Button>
             <Button 
               onClick={handleSave}
               disabled={!hasChanges}
               className={hasChanges ? "bg-gradient-to-r from-blue-600 to-purple-600" : ""}
             >
-              Salvar Configurações
+              {t('saveSettings')}
             </Button>
           </div>
         </div>
