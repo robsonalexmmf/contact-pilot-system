@@ -1,4 +1,3 @@
-
 import { 
   ContextMenu, 
   ContextMenuContent, 
@@ -18,6 +17,7 @@ import {
   FileText,
   Star
 } from "lucide-react";
+import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
 
 interface Lead {
   id: number;
@@ -68,7 +68,9 @@ export const LeadActionsMenu = ({
         }
         break;
       case 'call':
-        onCall(lead.id);
+        // Use a função do WhatsApp diretamente
+        const message = whatsappTemplates.leadContact(lead.name);
+        openWhatsApp(lead.phone, message);
         break;
       case 'email':
         onEmail(lead.id);
@@ -98,7 +100,7 @@ export const LeadActionsMenu = ({
       <ContextMenuContent className="w-56 bg-white border shadow-md">
         <ContextMenuItem onClick={() => handleAction('call')} className="cursor-pointer">
           <Phone className="w-4 h-4 mr-2" />
-          Ligar para contato
+          Abrir WhatsApp
         </ContextMenuItem>
         <ContextMenuItem onClick={() => handleAction('email')} className="cursor-pointer">
           <Mail className="w-4 h-4 mr-2" />

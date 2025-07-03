@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { NewLeadDialog } from "./NewLeadDialog";
 import { LeadActionsMenu } from "./LeadActionsMenu";
+import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
 
 const mockLeads = [
   {
@@ -86,9 +86,8 @@ export const LeadsManager = () => {
   const handleCallLead = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     if (lead?.phone) {
-      const whatsappUrl = `https://wa.me/${lead.phone}?text=Olá ${lead.name}, entrando em contato via Salesin Pro`;
-      window.open(whatsappUrl, '_blank');
-      console.log(`Abrindo WhatsApp para ${lead.name} - ${lead.phone}`);
+      const message = whatsappTemplates.leadContact(lead.name);
+      openWhatsApp(lead.phone, message);
     }
   };
 
