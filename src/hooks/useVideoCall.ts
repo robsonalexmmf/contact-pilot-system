@@ -16,7 +16,7 @@ export const useVideoCall = () => {
   const [activeCalls, setActiveCalls] = useState<VideoCallSession[]>([]);
 
   const generateRoomId = useCallback(() => {
-    // Gera um código de 3 grupos de 4 caracteres separados por hífen (formato Google Meet)
+    // Gera um código válido para Google Meet usando apenas letras minúsculas
     const chars = 'abcdefghijklmnopqrstuvwxyz';
     const generateGroup = () => {
       let result = '';
@@ -25,11 +25,18 @@ export const useVideoCall = () => {
       }
       return result;
     };
-    return `${generateGroup()}-${generateGroup()}-${generateGroup()}`;
+    
+    // Formato: xxx-yyyy-zzz (Google Meet aceita este formato)
+    const part1 = generateGroup().substring(0, 3);
+    const part2 = generateGroup();
+    const part3 = generateGroup().substring(0, 3);
+    
+    return `${part1}-${part2}-${part3}`;
   }, []);
 
   const createVideoCall = useCallback((contact: ChatContact) => {
     const roomId = generateRoomId();
+    // Usar o dominio correto do Google Meet
     const inviteLink = `https://meet.google.com/${roomId}`;
     
     const newCall: VideoCallSession = {

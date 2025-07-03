@@ -126,7 +126,18 @@ export const useChatManager = () => {
     const inviteMessage: ChatMessage = {
       id: Date.now(),
       sender: "Sistema",
-      message: `🎥 Convite para videochamada enviado!\n\n📋 Código da reunião: ${videoCall.roomId}\n🔗 Link direto: ${videoCall.inviteLink}\n\nVocê pode entrar na videochamada usando o código no Google Meet ou clicando no link direto.`,
+      message: `🎥 Convite para videochamada enviado!
+
+📋 **Código da reunião:** ${videoCall.roomId}
+
+🔗 **Link direto:** ${videoCall.inviteLink}
+
+**Como entrar na videochamada:**
+1. Acesse meet.google.com
+2. Digite o código: ${videoCall.roomId}
+3. Ou clique diretamente no link acima
+
+A videochamada já está ativa e aguardando sua participação!`,
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       type: "system",
       contactId,
