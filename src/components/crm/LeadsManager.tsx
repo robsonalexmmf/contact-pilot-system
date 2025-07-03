@@ -23,7 +23,7 @@ const mockLeads = [
     id: 1,
     name: "Maria Santos",
     email: "maria@empresa.com",
-    phone: "(11) 99999-1111",
+    phone: "5511999991111",
     company: "Empresa XYZ",
     status: "Novo",
     score: 85,
@@ -35,7 +35,7 @@ const mockLeads = [
     id: 2,
     name: "João Silva",
     email: "joao@startup.com", 
-    phone: "(11) 99999-2222",
+    phone: "5511999992222",
     company: "StartupTech",
     status: "Qualificado",
     score: 92,
@@ -47,7 +47,7 @@ const mockLeads = [
     id: 3,
     name: "Ana Costa",
     email: "ana@corp.com",
-    phone: "(11) 99999-3333", 
+    phone: "5511999993333", 
     company: "ABC Corp",
     status: "Proposta",
     score: 78,
@@ -85,51 +85,45 @@ export const LeadsManager = () => {
 
   const handleCallLead = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
-    console.log(`Iniciando ligação para ${lead?.name} - ${lead?.phone}`);
-    // Aqui você integraria com sistema de telefonia
+    if (lead?.phone) {
+      const whatsappUrl = `https://wa.me/${lead.phone}?text=Olá ${lead.name}, entrando em contato via Salesin Pro`;
+      window.open(whatsappUrl, '_blank');
+      console.log(`Abrindo WhatsApp para ${lead.name} - ${lead.phone}`);
+    }
   };
 
   const handleEmailLead = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
-    console.log(`Abrindo composição de email para ${lead?.name} - ${lead?.email}`);
-    // Aqui você abriria o composer de email
-    window.open(`mailto:${lead?.email}?subject=Contato via Salesin Pro`);
+    if (lead?.email) {
+      const emailUrl = `mailto:${lead.email}?subject=Contato via Salesin Pro&body=Olá ${lead.name}, entrando em contato.`;
+      window.open(emailUrl, '_blank');
+      console.log(`Abrindo email para ${lead.name} - ${lead.email}`);
+    }
   };
 
   const handleScheduleMeeting = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     console.log(`Agendando reunião com ${lead?.name}`);
     // Aqui você integraria com sistema de agenda
+    alert(`Funcionalidade de agendamento será implementada para ${lead?.name}`);
   };
 
   const handleCreateProposal = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     console.log(`Criando proposta para ${lead?.name}`);
-    // Aqui você redirecionaria para criação de proposta
+    alert(`Criando proposta para ${lead?.name}`);
   };
 
   const handleConvertToCustomer = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     console.log(`Convertendo lead ${lead?.name} em cliente`);
-    // Aqui você implementaria a conversão
+    alert(`${lead?.name} foi convertido em cliente!`);
   };
 
   const handleMarkAsFavorite = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     console.log(`Marcando ${lead?.name} como favorito`);
-    // Aqui você implementaria a funcionalidade de favoritos
-  };
-
-  const handleQuickCall = (leadId: number) => {
-    handleCallLead(leadId);
-  };
-
-  const handleQuickEmail = (leadId: number) => {
-    handleEmailLead(leadId);
-  };
-
-  const handleQuickMeeting = (leadId: number) => {
-    handleScheduleMeeting(leadId);
+    alert(`${lead?.name} marcado como favorito!`);
   };
 
   const filteredLeads = leads.filter(lead =>
@@ -216,7 +210,7 @@ export const LeadsManager = () => {
             className="pl-10"
           />
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={() => console.log("Filtros clicado")}>
           <Filter className="w-4 h-4 mr-2" />
           Filtros
         </Button>
@@ -257,7 +251,7 @@ export const LeadsManager = () => {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Phone className="w-4 h-4 mr-2" />
-                  {lead.phone}
+                  {lead.phone.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '+$1 ($2) $3-$4')}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin className="w-4 h-4 mr-2" />
@@ -280,24 +274,27 @@ export const LeadsManager = () => {
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  onClick={() => handleQuickCall(lead.id)}
-                  className="flex-1"
+                  onClick={() => handleCallLead(lead.id)}
+                  className="flex-1 hover:bg-green-50"
+                  title="Abrir WhatsApp"
                 >
                   <Phone className="w-4 h-4" />
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  onClick={() => handleQuickEmail(lead.id)}
-                  className="flex-1"
+                  onClick={() => handleEmailLead(lead.id)}
+                  className="flex-1 hover:bg-blue-50"
+                  title="Enviar Email"
                 >
                   <Mail className="w-4 h-4" />
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  onClick={() => handleQuickMeeting(lead.id)}
-                  className="flex-1"
+                  onClick={() => handleScheduleMeeting(lead.id)}
+                  className="flex-1 hover:bg-purple-50"
+                  title="Agendar Reunião"
                 >
                   <Calendar className="w-4 h-4" />
                 </Button>
