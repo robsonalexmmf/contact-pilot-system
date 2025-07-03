@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Target, TrendingUp, Shield, Check } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -9,7 +8,7 @@ export default function Landing() {
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <nav className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-blue-600">CRM Pro</div>
+          <div className="text-2xl font-bold text-blue-600">Salesin Pro</div>
           <div className="space-x-4">
             <Link to="/auth">
               <Button variant="ghost">Login</Button>
