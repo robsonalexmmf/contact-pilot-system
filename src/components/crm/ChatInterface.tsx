@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   MessageCircle, 
-  Plus, 
   Search, 
   Phone,
   Video,
@@ -14,91 +13,59 @@ import {
   Paperclip,
   Smile,
   MoreHorizontal,
-  User,
   Clock
 } from "lucide-react";
-
-const mockChats = [
-  {
-    id: 1,
-    contact: "Maria Santos",
-    company: "Empresa XYZ",
-    lastMessage: "Gostaria de agendar uma reunião para próxima semana",
-    timestamp: "14:30",
-    unread: 2,
-    status: "online",
-    channel: "WhatsApp"
-  },
-  {
-    id: 2,
-    contact: "João Silva",
-    company: "StartupTech", 
-    lastMessage: "Obrigado pelas informações, vou analisar a proposta",
-    timestamp: "13:45",
-    unread: 0,
-    status: "offline",
-    channel: "Email"
-  },
-  {
-    id: 3,
-    contact: "Ana Costa",
-    company: "ABC Corp",
-    lastMessage: "Podemos conversar sobre os preços?",
-    timestamp: "12:20",
-    unread: 1,
-    status: "away",
-    channel: "Chat Site"
-  }
-];
-
-const mockMessages = [
-  {
-    id: 1,
-    sender: "Maria Santos",
-    message: "Olá! Estou interessada nos seus serviços de consultoria.",
-    timestamp: "14:25",
-    type: "received"
-  },
-  {
-    id: 2,
-    sender: "Você",
-    message: "Olá Maria! Fico feliz com o seu interesse. Podemos agendar uma conversa?",
-    timestamp: "14:27",
-    type: "sent"
-  },
-  {
-    id: 3,
-    sender: "Maria Santos",
-    message: "Gostaria de agendar uma reunião para próxima semana",
-    timestamp: "14:30",
-    type: "received"
-  }
-];
+import { useChatManager } from "@/hooks/useChatManager";
+import { NewChatDialog } from "./NewChatDialog";
 
 export const ChatInterface = () => {
-  const [chats] = useState(mockChats);
-  const [messages] = useState(mockMessages);
+  const {
+    chats,
+    sendMessage,
+    markAsRead,
+    startCall,
+    startVideo,
+    createNewChat,
+    getMessagesForContact,
+    getStats
+  } = useChatManager();
+
   const [selectedChat, setSelectedChat] = useState(chats[0]);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
+  const stats = getStats();
+  const currentMessages = selectedChat ? getMessagesForContact(selectedChat.id) : [];
+
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      console.log(`Enviando mensagem: ${newMessage}`);
+    if (newMessage.trim() && selectedChat) {
+      sendMessage(selectedChat.id, newMessage.trim());
       setNewMessage("");
     }
   };
 
+  const handleSelectChat = (chat: typeof chats[0]) => {
+    setSelectedChat(chat);
+    if (chat.unread > 0) {
+      markAsRead(chat.id);
+    }
+  };
+
   const handleStartCall = () => {
-    console.log(`Iniciando ligação para ${selectedChat?.contact}...`);
+    if (selectedChat) {
+      startCall(selectedChat);
+    }
   };
 
   const handleStartVideo = () => {
-    console.log(`Iniciando video chamada para ${selectedChat?.contact}...`);
+    if (selectedChat) {
+      startVideo(selectedChat);
+    }
   };
 
-  const handleNewChat = () => {
-    console.log("Iniciando novo chat...");
+  const handleNewChat = (chatData: any) => {
+    const newChat = createNewChat(chatData);
+    setSelectedChat(newChat);
   };
 
   const getStatusColor = (status: string) => {
@@ -132,10 +99,7 @@ export const ChatInterface = () => {
           <h1 className="text-2xl font-bold text-gray-900">Chat & Atendimento</h1>
           <p className="text-gray-600">Central unificada de comunicação</p>
         </div>
-        <Button onClick={handleNewChat} className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Chat
-        </Button>
+        <NewChatDialog onCreateChat={handleNewChat} />
       </div>
 
       {/* Stats */}
@@ -145,7 +109,7 @@ export const ChatInterface = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Conversas Ativas</p>
-                <p className="text-2xl font-bold text-blue-600">{chats.length}</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.totalChats}</p>
               </div>
               <MessageCircle className="w-8 h-8 text-blue-500" />
             </div>
@@ -157,9 +121,7 @@ export const ChatInterface = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Não Lidas</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {chats.reduce((sum, chat) => sum + chat.unread, 0)}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{stats.unreadCount}</p>
               </div>
               <Badge className="w-8 h-8 text-red-500" />
             </div>
@@ -171,7 +133,7 @@ export const ChatInterface = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Tempo Resposta</p>
-                <p className="text-2xl font-bold text-green-600">2min</p>
+                <p className="text-2xl font-bold text-green-600">{stats.averageResponseTime}</p>
               </div>
               <Clock className="w-8 h-8 text-green-500" />
             </div>
@@ -183,7 +145,7 @@ export const ChatInterface = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Satisfação</p>
-                <p className="text-2xl font-bold text-purple-600">98%</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.satisfaction}</p>
               </div>
               <Smile className="w-8 h-8 text-purple-500" />
             </div>
@@ -216,7 +178,7 @@ export const ChatInterface = () => {
                 <div 
                   key={chat.id} 
                   className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedChat?.id === chat.id ? 'bg-blue-50 border-blue-200' : ''}`}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => handleSelectChat(chat)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
@@ -292,7 +254,7 @@ export const ChatInterface = () => {
               {/* Messages */}
               <CardContent className="p-4">
                 <div className="h-64 overflow-y-auto mb-4 space-y-3">
-                  {messages.map((message) => (
+                  {currentMessages.map((message) => (
                     <div key={message.id} className={`flex ${message.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         message.type === 'sent' 
