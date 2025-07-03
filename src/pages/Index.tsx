@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/crm/Sidebar";
 import { Header } from "@/components/crm/Header";
 import { Dashboard } from "@/components/crm/Dashboard";
@@ -30,10 +30,26 @@ import { ERPLite } from "@/components/crm/ERPLite";
 import { ABTesting } from "@/components/crm/ABTesting";
 import { OnboardingFlow } from "@/components/crm/OnboardingFlow";
 import { FormBuilder } from "@/components/crm/FormBuilder";
+import { CommandPalette } from "@/components/crm/CommandPalette";
+import { ComplianceManager } from "@/components/crm/ComplianceManager";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Command Palette shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -93,6 +109,8 @@ const Index = () => {
         return <OnboardingFlow />;
       case "form-builder":
         return <FormBuilder />;
+      case "compliance":
+        return <ComplianceManager />;
       default:
         return <Dashboard />;
     }
@@ -117,6 +135,12 @@ const Index = () => {
           {renderActiveModule()}
         </main>
       </div>
+
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onNavigate={(module) => setActiveModule(module)}
+      />
     </div>
   );
 };

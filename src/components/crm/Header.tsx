@@ -1,5 +1,5 @@
 
-import { Bell, Search, User, Menu, Plus } from "lucide-react";
+import { Bell, Search, User, Menu, Plus, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,8 @@ const moduleNames: Record<string, string> = {
   tasks: "Tarefas & Atividades",
   reports: "Relatórios",
   settings: "Configurações",
-  chat: "Chat & Atendimento"
+  chat: "Chat & Atendimento",
+  compliance: "Compliance & Governança"
 };
 
 export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
@@ -52,9 +53,14 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Buscar leads, empresas, tarefas..."
+              placeholder="Buscar leads, empresas, tarefas... (Ctrl+K)"
               className="pl-10 w-80"
             />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <kbd className="px-2 py-1 text-xs bg-gray-100 rounded border">
+                <Command className="w-3 h-3 inline mr-1" />K
+              </kbd>
+            </div>
           </div>
 
           <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
