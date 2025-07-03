@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Sidebar } from "@/components/crm/Sidebar";
 import { Header } from "@/components/crm/Header";
@@ -19,6 +18,11 @@ import { ProductManager } from "@/components/crm/ProductManager";
 import { UserManagement } from "@/components/crm/UserManagement";
 import { Integrations } from "@/components/crm/Integrations";
 import { AICopilot } from "@/components/crm/AICopilot";
+import { SocialCRM } from "@/components/crm/SocialCRM";
+import { LeadScoring } from "@/components/crm/LeadScoring";
+import { ExtensionsManager } from "@/components/crm/ExtensionsManager";
+import { TeamMetrics } from "@/components/crm/TeamMetrics";
+import { Academy } from "@/components/crm/Academy";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -60,6 +64,16 @@ const Index = () => {
         return <Integrations />;
       case "ai-copilot":
         return <AICopilot />;
+      case "social-crm":
+        return <SocialCRM />;
+      case "lead-scoring":
+        return <LeadScoring />;
+      case "extensions":
+        return <ExtensionsManager />;
+      case "team-metrics":
+        return <TeamMetrics />;
+      case "academy":
+        return <Academy />;
       default:
         return <Dashboard />;
     }
