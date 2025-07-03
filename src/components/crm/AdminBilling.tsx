@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { 
   DollarSign, 
   CreditCard, 
@@ -15,86 +16,73 @@ import {
   Calendar,
   BarChart3,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  RefreshCw,
+  FileText
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const revenueData = [
-  { month: 'Jan', receita: 32000, usuarios: 45, assinaturas: 23 },
-  { month: 'Fev', receita: 38000, usuarios: 52, assinaturas: 28 },
-  { month: 'Mar', receita: 42000, usuarios: 61, assinaturas: 34 },
-  { month: 'Abr', receita: 45000, usuarios: 68, assinaturas: 38 },
-  { month: 'Mai', receita: 51000, usuarios: 78, assinaturas: 45 },
-  { month: 'Jun', receita: 58000, usuarios: 89, assinaturas: 52 }
-];
-
-const planDistribution = [
-  { name: 'Pro', value: 45, color: '#3B82F6', monthly: 890 },
-  { name: 'Premium', value: 23, color: '#8B5CF6', monthly: 2300 },
-  { name: 'Enterprise', value: 8, color: '#10B981', monthly: 1600 }
-];
-
-const transactions = [
-  {
-    id: 1,
-    user: "João Silva",
-    email: "joao@empresa.com",
-    plan: "Premium",
-    amount: 149.90,
-    status: "paid",
-    date: "2024-01-15",
-    method: "Cartão"
-  },
-  {
-    id: 2,
-    user: "Maria Santos",
-    email: "maria@startup.com",
-    plan: "Pro",
-    amount: 79.90,
-    status: "paid",
-    date: "2024-01-15",
-    method: "PIX"
-  },
-  {
-    id: 3,
-    user: "Pedro Costa",
-    email: "pedro@negocio.com",
-    plan: "Pro",
-    amount: 79.90,
-    status: "pending",
-    date: "2024-01-14",
-    method: "Boleto"
-  },
-  {
-    id: 4,
-    user: "Ana Oliveira",
-    email: "ana@consultoria.com",
-    plan: "Premium",
-    amount: 149.90,
-    status: "failed",
-    date: "2024-01-14",
-    method: "Cartão"
-  },
-  {
-    id: 5,
-    user: "Carlos Lima",
-    email: "carlos@digital.com",
-    plan: "Enterprise",
-    amount: 299.90,
-    status: "paid",
-    date: "2024-01-13",
-    method: "Transferência"
-  }
-];
+import { useFinancialData } from "@/hooks/useFinancialData";
 
 export const AdminBilling = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
+
+  const { metrics, transactions, revenueData, loading, refreshData } = useFinancialData();
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    refreshData();
+    
+    toast({
+      title: "Dados Atualizados",
+      description: "Informações financeiras atualizadas com sucesso!",
+    });
+    
+    setTimeout(() => setIsRefreshing(false), 1500);
+  };
+
+  const handleExport = () => {
+    const csvContent = [
+      ['Nome', 'Email', 'Plano', 'Valor', 'Status', 'Data', 'Método'].join(','),
+      ...filteredTransactions.map(t => 
+        [t.user_name, t.user_email, t.plan, t.amount, getStatusText(t.status), t.date, t.method].join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `faturamento_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exportação Concluída",
+      description: "Relatório de faturamento exportado com sucesso!",
+    });
+  };
+
+  const handleGenerateReport = () => {
+    toast({
+      title: "Relatório Gerado",
+      description: "Relatório detalhado de faturamento está sendo gerado...",
+    });
+  };
+
+  const handleViewTransaction = (transactionId: string) => {
+    toast({
+      title: "Detalhes da Transação",
+      description: `Visualizando detalhes da transação ${transactionId}`,
+    });
+  };
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = transaction.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         transaction.user_email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
     
     return matchesSearch && matchesStatus;
@@ -118,11 +106,22 @@ export const AdminBilling = () => {
     }
   };
 
-  const totalRevenue = revenueData[revenueData.length - 1]?.receita || 0;
-  const monthlyGrowth = revenueData.length > 1 ? 
-    ((revenueData[revenueData.length - 1].receita - revenueData[revenueData.length - 2].receita) / revenueData[revenueData.length - 2].receita * 100).toFixed(1) : 0;
-  const totalSubscriptions = planDistribution.reduce((sum, plan) => sum + plan.value, 0);
-  const monthlyRecurring = planDistribution.reduce((sum, plan) => sum + plan.monthly, 0);
+  const planDistribution = [
+    { name: 'Basic', value: transactions.filter(t => t.plan === 'Basic').length, color: '#3B82F6', monthly: 890 },
+    { name: 'Premium', value: transactions.filter(t => t.plan === 'Premium').length, color: '#8B5CF6', monthly: 2300 },
+    { name: 'Enterprise', value: transactions.filter(t => t.plan === 'Enterprise').length, color: '#10B981', monthly: 1600 }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p>Carregando dados financeiros...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -133,12 +132,21 @@ export const AdminBilling = () => {
           <p className="text-gray-600">Controle financeiro e receitas do sistema</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
-          <Button size="sm">
-            <BarChart3 className="w-4 h-4 mr-2" />
+          <Button size="sm" onClick={handleGenerateReport}>
+            <FileText className="w-4 h-4 mr-2" />
             Relatórios
           </Button>
         </div>
@@ -151,13 +159,13 @@ export const AdminBilling = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
-                <p className="text-2xl font-bold text-green-600">R$ {totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-600">R$ {metrics.monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
               <DollarSign className="w-8 h-8 text-green-500" />
             </div>
             <div className="flex items-center mt-2">
               <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+{monthlyGrowth}% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.revenue}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -167,13 +175,13 @@ export const AdminBilling = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Receita Recorrente</p>
-                <p className="text-2xl font-bold text-blue-600">R$ {monthlyRecurring.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-blue-600">R$ {metrics.recurringRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
               <CreditCard className="w-8 h-8 text-blue-500" />
             </div>
             <div className="flex items-center mt-2">
               <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+18% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.recurring}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -183,13 +191,13 @@ export const AdminBilling = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Assinaturas Ativas</p>
-                <p className="text-2xl font-bold text-purple-600">{totalSubscriptions}</p>
+                <p className="text-2xl font-bold text-purple-600">{metrics.activeSubscriptions}</p>
               </div>
               <Users className="w-8 h-8 text-purple-500" />
             </div>
             <div className="flex items-center mt-2">
               <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+12% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.subscriptions}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -199,13 +207,13 @@ export const AdminBilling = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Taxa de Conversão</p>
-                <p className="text-2xl font-bold text-orange-600">12.4%</p>
+                <p className="text-2xl font-bold text-orange-600">{metrics.conversionRate.toFixed(1)}%</p>
               </div>
               <TrendingUp className="w-8 h-8 text-orange-500" />
             </div>
             <div className="flex items-center mt-2">
               <ArrowUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+2.1% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.conversion}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -228,7 +236,7 @@ export const AdminBilling = () => {
                 <YAxis />
                 <Tooltip 
                   formatter={(value, name) => [
-                    name === 'receita' ? `R$ ${value.toLocaleString()}` : value,
+                    name === 'receita' ? `R$ ${Number(value).toLocaleString('pt-BR')}` : value,
                     name === 'receita' ? 'Receita' : name === 'usuarios' ? 'Usuários Pagos' : 'Assinaturas'
                   ]}
                 />
@@ -289,7 +297,7 @@ export const AdminBilling = () => {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center">
               <CreditCard className="w-5 h-5 mr-2" />
-              Transações Recentes
+              Transações Recentes ({filteredTransactions.length})
             </div>
           </CardTitle>
           <div className="flex space-x-2 mt-4">
@@ -317,52 +325,63 @@ export const AdminBilling = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {transaction.user.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{transaction.user}</h4>
-                    <p className="text-sm text-gray-600">{transaction.email}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Plano</p>
-                    <Badge variant="outline">{transaction.plan}</Badge>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Valor</p>
-                    <p className="font-medium">R$ {transaction.amount.toFixed(2)}</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Método</p>
-                    <p className="text-sm">{transaction.method}</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Status</p>
-                    <Badge className={getStatusColor(transaction.status)}>
-                      {getStatusText(transaction.status)}
-                    </Badge>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Data</p>
-                    <p className="text-sm">{transaction.date}</p>
-                  </div>
-                  
-                  <Button size="sm" variant="outline">
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </div>
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Nenhuma transação encontrada</p>
               </div>
-            ))}
+            ) : (
+              filteredTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:shadow-sm transition-shadow">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      {transaction.user_name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{transaction.user_name}</h4>
+                      <p className="text-sm text-gray-600">{transaction.user_email}</p>
+                      <p className="text-xs text-gray-500">{transaction.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Plano</p>
+                      <Badge variant="outline">{transaction.plan}</Badge>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Valor</p>
+                      <p className="font-medium">R$ {transaction.amount.toFixed(2)}</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Método</p>
+                      <p className="text-sm">{transaction.method}</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Status</p>
+                      <Badge className={getStatusColor(transaction.status)}>
+                        {getStatusText(transaction.status)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600">Data</p>
+                      <p className="text-sm">{transaction.date}</p>
+                    </div>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleViewTransaction(transaction.id)}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
