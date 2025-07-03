@@ -1,4 +1,3 @@
-
 export interface TestUser {
   id: string;
   email: string;
@@ -57,6 +56,11 @@ export const authenticateTestUser = (email: string, password: string): TestUser 
     // Ativar o plano correspondente
     activateUserPlan(user.plan);
     
+    // Se for admin, salvar flag específica
+    if (user.plan === 'admin') {
+      localStorage.setItem('is_admin', 'true');
+    }
+    
     return user;
   }
   
@@ -105,5 +109,6 @@ export const getCurrentUser = (): TestUser | null => {
  */
 export const isAdminUser = (): boolean => {
   const user = getCurrentUser();
-  return user?.plan === 'admin' || false;
+  const isAdminFlag = localStorage.getItem('is_admin');
+  return user?.plan === 'admin' || isAdminFlag === 'true';
 };

@@ -36,6 +36,8 @@ import { PlanLimitDialog } from "@/components/crm/PlanLimitDialog";
 import { isPlanActive, getUsageInfo, isFeatureAvailable } from "@/utils/planService";
 import { AdminDashboard } from "@/components/crm/AdminDashboard";
 import { isAdminUser } from "@/utils/testUsers";
+import { AdminSidebar } from "@/components/crm/AdminSidebar";
+import { AdminHeader } from "@/components/crm/AdminHeader";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -116,11 +118,43 @@ const Index = () => {
   };
 
   const renderActiveModule = () => {
-    // Se for admin e estiver no dashboard, mostrar dashboard admin
-    if (activeModule === "dashboard" && isAdminUser()) {
-      return <AdminDashboard />;
+    // Para admin, renderizar módulos administrativos
+    if (isAdminUser()) {
+      // Se for admin e não estiver em módulo admin, redirecionar para admin-dashboard
+      if (!activeModule.startsWith('admin-')) {
+        setActiveModule('admin-dashboard');
+        return <AdminDashboard />;
+      }
+
+      switch (activeModule) {
+        case "admin-dashboard":
+          return <AdminDashboard />;
+        case "admin-users":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Gerenciar Usuários</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-system":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Sistema</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-monitoring":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Monitoramento</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-billing":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Faturamento</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-reports":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Relatórios Admin</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-notifications":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Notificações</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-security":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Segurança</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-logs":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Logs do Sistema</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-integrations":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Integrações</h2><p>Módulo em desenvolvimento</p></div>;
+        case "admin-settings":
+          return <div className="p-6"><h2 className="text-2xl font-bold">Configurações</h2><p>Módulo em desenvolvimento</p></div>;
+        default:
+          return <AdminDashboard />;
+      }
     }
 
+    // Para usuários normais, usar o sistema CRM normal
     switch (activeModule) {
       case "dashboard":
         return <Dashboard />;
@@ -185,6 +219,45 @@ const Index = () => {
     }
   };
 
+  // Se for admin, usar layout administrativo
+  if (isAdminUser()) {
+    return (
+      <div className="min-h-screen bg-gray-800 flex">
+        <AdminSidebar 
+          activeModule={activeModule} 
+          setActiveModule={setActiveModule}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+        />
+        
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+          <AdminHeader 
+            activeModule={activeModule}
+            toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          />
+          
+          <main className="flex-1 p-6 overflow-auto bg-gray-100">
+            {renderActiveModule()}
+          </main>
+        </div>
+
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          onNavigate={(module) => setActiveModule(module)}
+        />
+
+        <PlanLimitDialog
+          open={planLimitDialog.open}
+          onClose={() => setPlanLimitDialog({ open: false, limitType: '', currentCount: 0 })}
+          limitType={planLimitDialog.limitType}
+          currentCount={planLimitDialog.currentCount}
+        />
+      </div>
+    );
+  }
+
+  // Layout normal para usuários não-admin
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <Sidebar 
