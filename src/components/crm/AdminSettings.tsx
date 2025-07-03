@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,13 +190,16 @@ export const AdminSettings = () => {
 
       // Tentar carregar do Supabase
       const { data, error } = await supabase
-        .from('system_settings')
+        .from('system_settings' as any)
         .select('*')
         .single();
 
       if (data && !error) {
-        setSettings(data.settings);
-        console.log('Configurações carregadas do Supabase:', data.settings);
+        const settingsData = data as any;
+        if (settingsData.settings) {
+          setSettings(settingsData.settings as SystemSettings);
+          console.log('Configurações carregadas do Supabase:', settingsData.settings);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
@@ -241,12 +244,12 @@ export const AdminSettings = () => {
       // Salvar no localStorage
       localStorage.setItem('admin_system_settings', JSON.stringify(settings));
       
-      // Tentar salvar no Supabase
+      // Tentar salvar no Supabase - usando type assertion para contornar limitações de TypeScript
       const { error } = await supabase
-        .from('system_settings')
+        .from('system_settings' as any)
         .upsert({
           id: 'main_config',
-          settings: settings,
+          settings: settings as any,
           updated_at: new Date().toISOString()
         });
 
