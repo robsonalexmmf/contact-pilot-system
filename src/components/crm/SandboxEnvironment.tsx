@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Flask, 
+  TestTube, 
   Play,
   Pause,
   RotateCcw,
@@ -46,7 +45,7 @@ export const SandboxEnvironment = () => {
           <p className="text-gray-600">Teste automações e integrações sem afetar dados reais</p>
         </div>
         <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
-          <Flask className="w-4 h-4 mr-2" />
+          <TestTube className="w-4 h-4 mr-2" />
           Novo Teste
         </Button>
       </div>
@@ -60,7 +59,7 @@ export const SandboxEnvironment = () => {
                 <p className="text-sm font-medium text-gray-600">Testes Ativos</p>
                 <p className="text-2xl font-bold text-blue-600">2</p>
               </div>
-              <Flask className="w-8 h-8 text-blue-500" />
+              <TestTube className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
