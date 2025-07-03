@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,7 @@ interface AdminIntegration {
   id: string;
   name: string;
   description: string;
-  iconName: string; // Mudança: usar string em vez de JSX.Element
+  iconName: string;
   enabled: boolean;
   webhookUrl: string;
   apiKey: string;
@@ -78,6 +77,25 @@ export const AdminIntegrations = () => {
   const [testingIntegrations, setTestingIntegrations] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
+  // Sincronizar integrações ativas com o CRM
+  const syncIntegrationsWithCRM = () => {
+    const activeIntegrations = integrations.filter(int => int.enabled && int.isGlobal);
+    
+    const crmIntegrations = activeIntegrations.map(int => ({
+      id: int.id,
+      name: int.name,
+      description: int.description,
+      enabled: int.enabled,
+      webhookUrl: int.webhookUrl,
+      apiKey: int.apiKey,
+      category: int.category,
+      isFromAdmin: true
+    }));
+    
+    localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
+    console.log('Integrações sincronizadas com o CRM:', crmIntegrations);
+  };
+
   // Carregar integrações do Supabase
   useEffect(() => {
     loadIntegrations();
@@ -99,7 +117,7 @@ export const AdminIntegrations = () => {
             id: "zapier-global",
             name: "Zapier Global",
             description: "Integração global com Zapier para todos os usuários",
-            iconName: "Zap", // Mudança: usar string
+            iconName: "Zap",
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -112,7 +130,7 @@ export const AdminIntegrations = () => {
             id: "whatsapp-business",
             name: "WhatsApp Business API",
             description: "API oficial do WhatsApp para mensagens",
-            iconName: "MessageSquare", // Mudança: usar string
+            iconName: "MessageSquare",
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -125,7 +143,7 @@ export const AdminIntegrations = () => {
             id: "smtp-global",
             name: "SMTP Global",
             description: "Servidor SMTP para envio de emails do sistema",
-            iconName: "Mail", // Mudança: usar string
+            iconName: "Mail",
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -138,7 +156,7 @@ export const AdminIntegrations = () => {
             id: "slack-admin",
             name: "Slack Administrativo",
             description: "Notificações administrativas no Slack",
-            iconName: "Slack", // Mudança: usar string
+            iconName: "Slack",
             enabled: false,
             webhookUrl: "",
             apiKey: "",
@@ -345,7 +363,7 @@ export const AdminIntegrations = () => {
       id: `custom-${Date.now()}`,
       name: data.name,
       description: data.description,
-      iconName: "Globe", // Mudança: usar string
+      iconName: "Globe",
       enabled: false,
       webhookUrl: data.webhookUrl,
       apiKey: data.apiKey,
@@ -408,25 +426,6 @@ export const AdminIntegrations = () => {
       console.error("Erro ao salvar integrações:", error);
       throw error;
     }
-  };
-
-  // Sincronizar integrações ativas com o CRM
-  const syncIntegrationsWithCRM = () => {
-    const activeIntegrations = integrations.filter(int => int.enabled && int.isGlobal);
-    
-    const crmIntegrations = activeIntegrations.map(int => ({
-      id: int.id,
-      name: int.name,
-      description: int.description,
-      enabled: int.enabled,
-      webhookUrl: int.webhookUrl,
-      apiKey: int.apiKey,
-      category: int.category,
-      isFromAdmin: true
-    }));
-    
-    localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
-    console.log('Integrações sincronizadas com o CRM:', crmIntegrations);
   };
 
   const activeIntegrations = integrations.filter(i => i.enabled).length;
@@ -526,7 +525,6 @@ export const AdminIntegrations = () => {
       {/* Integrations List */}
       <div className="space-y-4">
         {integrations.map((integration) => {
-          // Mudança: obter o ícone do mapeamento
           const IconComponent = iconMap[integration.iconName] || Globe;
           
           return (
