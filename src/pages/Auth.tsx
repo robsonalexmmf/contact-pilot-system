@@ -15,7 +15,6 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
-  const [shouldRedirectToPayment, setShouldRedirectToPayment] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,20 +26,16 @@ export default function Auth() {
     if (user) {
       console.log('Usuário autenticado:', user.email);
       
-      // Se há plano selecionado e deve redirecionar para pagamento
-      if (selectedPlan && shouldRedirectToPayment) {
-        console.log('Redirecionando para pagamento após cadastro...');
-        handlePaymentRedirect();
-      } else if (selectedPlan && !shouldRedirectToPayment) {
-        // Se já estava logado e há plano selecionado
-        console.log('Usuário já logado, redirecionando para pagamento...');
+      // Se há plano selecionado, processar pagamento
+      if (selectedPlan) {
+        console.log('Redirecionando para pagamento...');
         handlePaymentRedirect();
       } else {
         // Se não há plano, vai para o app
         navigate('/app');
       }
     }
-  }, [user, selectedPlan, shouldRedirectToPayment]);
+  }, [user, selectedPlan]);
 
   const handlePaymentRedirect = async () => {
     if (!user || !selectedPlan) return;
@@ -142,6 +137,12 @@ export default function Auth() {
           description: "Este email já está registrado. Tente fazer login.",
           variant: "destructive"
         });
+      } else if (error.message.includes('rate_limit')) {
+        toast({
+          title: "Muitas tentativas",
+          description: "Aguarde alguns segundos antes de tentar novamente.",
+          variant: "destructive"
+        });
       } else {
         toast({
           title: "Erro no cadastro",
@@ -152,18 +153,22 @@ export default function Auth() {
     } else {
       console.log('Cadastro realizado com sucesso');
       
-      // Marcar que deve redirecionar para pagamento após autenticação
-      if (selectedPlan) {
-        setShouldRedirectToPayment(true);
-        console.log('Marcado para redirecionar para pagamento');
-      }
-      
       toast({
         title: "Cadastro realizado!",
         description: selectedPlan 
-          ? "Aguarde, redirecionando para o pagamento..."
+          ? "Confirme seu email e faça login para prosseguir com o pagamento."
           : "Verifique seu email para confirmar a conta antes de continuar."
       });
+
+      // Se há plano selecionado, manter o plano salvo e mostrar mensagem para fazer login
+      if (selectedPlan) {
+        console.log('Plano mantido para após login');
+        // Alternar para a aba de login
+        const loginTab = document.querySelector('[value="login"]') as HTMLElement;
+        if (loginTab) {
+          loginTab.click();
+        }
+      }
     }
     
     setIsLoading(false);
@@ -185,7 +190,7 @@ export default function Auth() {
               <CheckCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
                 <strong>Plano selecionado:</strong> {selectedPlan === 'pro' ? 'Pro (R$ 97/mês)' : 'Premium (R$ 197/mês)'}
-                <br />Após o cadastro, você será direcionado automaticamente para o pagamento.
+                <br />Após o cadastro e confirmação do email, faça login para prosseguir com o pagamento.
               </AlertDescription>
             </Alert>
           )}
@@ -294,7 +299,7 @@ export default function Auth() {
                       Criando conta...
                     </>
                   ) : (
-                    selectedPlan ? 'Cadastrar e Prosseguir para Pagamento' : 'Criar Conta'
+                    selectedPlan ? 'Cadastrar e Continuar' : 'Criar Conta'
                   )}
                 </Button>
               </form>
