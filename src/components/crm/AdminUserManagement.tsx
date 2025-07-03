@@ -73,6 +73,34 @@ export const AdminUserManagement = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
 
+  // Handlers para os botões
+  const handleNewUser = () => {
+    console.log('Criando novo usuário...');
+    alert('Funcionalidade de criar novo usuário será implementada em breve');
+  };
+
+  const handleViewUser = (userId: number) => {
+    console.log('Visualizando usuário:', userId);
+    alert(`Visualizando detalhes do usuário ${userId}`);
+  };
+
+  const handleEditUser = (userId: number) => {
+    console.log('Editando usuário:', userId);
+    alert(`Editando usuário ${userId}`);
+  };
+
+  const handleSendEmail = (userId: number, userEmail: string) => {
+    console.log('Enviando email para:', userEmail);
+    alert(`Enviando email para ${userEmail}`);
+  };
+
+  const handleDeleteUser = (userId: number, userName: string) => {
+    console.log('Deletando usuário:', userId);
+    if (confirm(`Tem certeza que deseja excluir o usuário ${userName}?`)) {
+      alert(`Usuário ${userName} seria excluído (funcionalidade será implementada)`);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -107,7 +135,10 @@ export const AdminUserManagement = () => {
           <h1 className="text-2xl font-bold text-gray-900">Gerenciar Usuários</h1>
           <p className="text-gray-600">Administre todos os usuários do sistema CRM</p>
         </div>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
+        <Button 
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          onClick={handleNewUser}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Usuário
         </Button>
@@ -251,16 +282,36 @@ export const AdminUserManagement = () => {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleViewUser(user.id)}
+                    className="hover:bg-blue-50 hover:border-blue-300"
+                  >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleEditUser(user.id)}
+                    className="hover:bg-green-50 hover:border-green-300"
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleSendEmail(user.id, user.email)}
+                    className="hover:bg-yellow-50 hover:border-yellow-300"
+                  >
                     <Mail className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleDeleteUser(user.id, user.name)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
