@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,15 +15,18 @@ import {
   Phone,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  MessageCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
 
 const mockAdminUsers = [
   {
     id: 1,
     name: "João Silva",
     email: "joao@empresa.com",
+    whatsapp: "+55 11 99999-1234",
     plan: "Premium",
     status: "Ativo",
     lastLogin: "2024-01-15 14:30",
@@ -36,6 +38,7 @@ const mockAdminUsers = [
     id: 2,
     name: "Maria Santos",
     email: "maria@startup.com",
+    whatsapp: "+55 21 98888-5678",
     plan: "Pro",
     status: "Ativo",
     lastLogin: "2024-01-15 13:45",
@@ -47,6 +50,7 @@ const mockAdminUsers = [
     id: 3,
     name: "Pedro Costa",
     email: "pedro@negocio.com",
+    whatsapp: "+55 11 97777-9012",
     plan: "Free",
     status: "Inativo",
     lastLogin: "2024-01-10 09:15",
@@ -58,6 +62,7 @@ const mockAdminUsers = [
     id: 4,
     name: "Ana Oliveira",
     email: "ana@consultoria.com",
+    whatsapp: "+55 11 96666-3456",
     plan: "Premium",
     status: "Ativo",
     lastLogin: "2024-01-14 16:20",
@@ -80,18 +85,26 @@ export const AdminUserManagement = () => {
   };
 
   const handleViewUser = (userId: number) => {
-    console.log('Visualizando usuário:', userId);
-    alert(`Visualizando detalhes do usuário ${userId}`);
+    const user = users.find(u => u.id === userId);
+    console.log('Visualizando usuário:', userId, user);
+    alert(`Visualizando detalhes do usuário ${user?.name} (ID: ${userId})`);
   };
 
   const handleEditUser = (userId: number) => {
-    console.log('Editando usuário:', userId);
-    alert(`Editando usuário ${userId}`);
+    const user = users.find(u => u.id === userId);
+    console.log('Editando usuário:', userId, user);
+    alert(`Editando usuário ${user?.name} (ID: ${userId})`);
   };
 
   const handleSendEmail = (userId: number, userEmail: string) => {
     console.log('Enviando email para:', userEmail);
     alert(`Enviando email para ${userEmail}`);
+  };
+
+  const handleWhatsApp = (userId: number, userWhatsApp: string, userName: string) => {
+    console.log('Enviando WhatsApp para:', userWhatsApp);
+    const message = whatsappTemplates.leadContact(userName);
+    openWhatsApp(userWhatsApp, message);
   };
 
   const handleDeleteUser = (userId: number, userName: string) => {
@@ -103,7 +116,8 @@ export const AdminUserManagement = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.whatsapp.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || user.status.toLowerCase() === statusFilter;
     const matchesPlan = planFilter === "all" || user.plan.toLowerCase() === planFilter;
     
@@ -200,7 +214,7 @@ export const AdminUserManagement = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Buscar usuários..."
+            placeholder="Buscar usuários por nome, email ou WhatsApp..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -243,6 +257,10 @@ export const AdminUserManagement = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900 text-lg">{user.name}</h3>
                       <p className="text-gray-600">{user.email}</p>
+                      <div className="flex items-center mt-1">
+                        <Phone className="w-4 h-4 text-gray-500 mr-1" />
+                        <p className="text-sm text-gray-600">{user.whatsapp}</p>
+                      </div>
                     </div>
                   </div>
                   
@@ -305,6 +323,14 @@ export const AdminUserManagement = () => {
                     className="hover:bg-yellow-50 hover:border-yellow-300"
                   >
                     <Mail className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleWhatsApp(user.id, user.whatsapp, user.name)}
+                    className="hover:bg-green-50 hover:border-green-300"
+                  >
+                    <MessageCircle className="w-4 h-4" />
                   </Button>
                   <Button 
                     size="sm" 
