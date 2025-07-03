@@ -91,6 +91,9 @@ export const AutomationManager = () => {
   const [automations, setAutomations] = useState(mockAutomations);
   const [editingAutomation, setEditingAutomation] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
+  const [preselectedTrigger, setPreselectedTrigger] = useState<string>("");
+  const [preselectedAction, setPreselectedAction] = useState<string>("");
   const [executingAutomations, setExecutingAutomations] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
@@ -214,6 +217,36 @@ export const AutomationManager = () => {
     }
   };
 
+  const handleTriggerClick = (triggerId: string) => {
+    setPreselectedTrigger(triggerId);
+    setPreselectedAction("");
+    setIsNewDialogOpen(true);
+    
+    const triggerName = triggerTypes.find(t => t.id === triggerId)?.name;
+    toast({
+      title: "Gatilho Selecionado",
+      description: `Criando nova automação com gatilho: ${triggerName}`,
+    });
+  };
+
+  const handleActionClick = (actionId: string) => {
+    setPreselectedAction(actionId);
+    setPreselectedTrigger("");
+    setIsNewDialogOpen(true);
+    
+    const actionName = actionTypes.find(a => a.id === actionId)?.name;
+    toast({
+      title: "Ação Selecionada",
+      description: `Criando nova automação com ação: ${actionName}`,
+    });
+  };
+
+  const handleDialogClose = () => {
+    setIsNewDialogOpen(false);
+    setPreselectedTrigger("");
+    setPreselectedAction("");
+  };
+
   const activeAutomations = automations.filter(a => a.status === "Ativo").length;
   const totalExecutions = automations.reduce((sum, a) => sum + a.executions, 0);
   const averageSuccessRate = Math.round(automations.reduce((sum, a) => sum + a.successRate, 0) / automations.length);
@@ -226,7 +259,13 @@ export const AutomationManager = () => {
           <h1 className="text-2xl font-bold text-gray-900">Automação</h1>
           <p className="text-gray-600">Configure automações para otimizar seu workflow</p>
         </div>
-        <NewAutomationDialog onCreateAutomation={handleCreateAutomation} />
+        <Button 
+          onClick={() => setIsNewDialogOpen(true)}
+          className="bg-gradient-to-r from-blue-600 to-purple-600"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Automação
+        </Button>
       </div>
 
       {/* Stats */}
@@ -386,7 +425,11 @@ export const AutomationManager = () => {
               {triggerTypes.map((trigger) => {
                 const Icon = trigger.icon;
                 return (
-                  <div key={trigger.id} className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <div 
+                    key={trigger.id} 
+                    className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors hover:border-blue-300"
+                    onClick={() => handleTriggerClick(trigger.id)}
+                  >
                     <div className="flex items-center space-x-2">
                       <Icon className="w-5 h-5 text-blue-600" />
                       <span className="text-sm font-medium">{trigger.name}</span>
@@ -395,6 +438,9 @@ export const AutomationManager = () => {
                 );
               })}
             </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Clique em um gatilho para criar uma nova automação
+            </p>
           </CardContent>
         </Card>
 
@@ -407,7 +453,11 @@ export const AutomationManager = () => {
               {actionTypes.map((action) => {
                 const Icon = action.icon;
                 return (
-                  <div key={action.id} className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <div 
+                    key={action.id} 
+                    className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors hover:border-purple-300"
+                    onClick={() => handleActionClick(action.id)}
+                  >
                     <div className="flex items-center space-x-2">
                       <Icon className="w-5 h-5 text-purple-600" />
                       <span className="text-sm font-medium">{action.name}</span>
@@ -416,9 +466,21 @@ export const AutomationManager = () => {
                 );
               })}
             </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Clique em uma ação para criar uma nova automação
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* New Automation Dialog */}
+      <NewAutomationDialog 
+        isOpen={isNewDialogOpen}
+        onClose={handleDialogClose}
+        onCreateAutomation={handleCreateAutomation}
+        preselectedTrigger={preselectedTrigger}
+        preselectedAction={preselectedAction}
+      />
 
       {/* Edit Dialog */}
       <EditAutomationDialog

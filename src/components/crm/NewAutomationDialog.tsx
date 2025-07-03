@@ -1,16 +1,19 @@
-
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Mail, MessageCircle, Calendar, Clock, Zap } from "lucide-react";
+import { Users, Mail, MessageCircle, Calendar, Clock, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface NewAutomationDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
   onCreateAutomation: (automation: any) => void;
+  preselectedTrigger?: string;
+  preselectedAction?: string;
 }
 
 const triggerTypes = [
@@ -31,8 +34,13 @@ const actionTypes = [
   { id: "pabbly_webhook", name: "🔁 Pabbly Webhook", icon: Zap }
 ];
 
-export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const NewAutomationDialog = ({ 
+  isOpen, 
+  onClose, 
+  onCreateAutomation, 
+  preselectedTrigger = "", 
+  preselectedAction = "" 
+}: NewAutomationDialogProps) => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -44,6 +52,15 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
     webhookUrl: ""
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (preselectedTrigger) {
+      setFormData(prev => ({ ...prev, trigger: preselectedTrigger }));
+    }
+    if (preselectedAction) {
+      setFormData(prev => ({ ...prev, action: preselectedAction }));
+    }
+  }, [preselectedTrigger, preselectedAction]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,7 +127,7 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
       targetGroup: "all",
       webhookUrl: ""
     });
-    setIsOpen(false);
+    onClose();
   };
 
   const getTriggerName = (triggerId: string) => {
@@ -124,13 +141,7 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
   const isWebhookAction = ["zapier_webhook", "make_webhook", "n8n_webhook", "pabbly_webhook"].includes(formData.action);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Automação
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Automação</DialogTitle>
@@ -249,7 +260,7 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
           </div>
 
           <div className="flex space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="flex-1">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancelar
             </Button>
             <Button type="submit" className="flex-1">
