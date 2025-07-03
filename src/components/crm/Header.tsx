@@ -1,4 +1,3 @@
-
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationsDropdown } from "./NotificationsDropdown";
@@ -26,11 +25,6 @@ const moduleNames: Record<string, string> = {
 };
 
 export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
-  const handleNewLead = () => {
-    console.log("Botão 'Novo Lead' clicado");
-    alert("Abrindo dialog para novo lead");
-  };
-
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -64,10 +58,11 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
         <div className="flex items-center space-x-4">
           <GlobalSearch />
 
+          {/* O botão agora é renderizado pelo próprio NewLeadDialog */}
           <Button 
             size="sm" 
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            onClick={handleNewLead}
+            onClick={() => console.log("Este botão será substituído pelo NewLeadDialog")}
           >
             <Plus className="w-4 h-4 mr-2" />
             Novo Lead

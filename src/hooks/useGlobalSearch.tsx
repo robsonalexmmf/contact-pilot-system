@@ -4,19 +4,19 @@ import { useState, useMemo } from "react";
 // Mock data para demonstração - em produção viria da API
 const mockSearchData = {
   leads: [
-    { id: 1, name: "Maria Santos", type: "lead", company: "Empresa XYZ", email: "maria@empresa.com" },
-    { id: 2, name: "João Silva", type: "lead", company: "StartupTech", email: "joao@startup.com" },
-    { id: 3, name: "Ana Costa", type: "lead", company: "ABC Corp", email: "ana@corp.com" }
+    { id: 1, name: "Maria Santos", type: "lead" as const, company: "Empresa XYZ", email: "maria@empresa.com" },
+    { id: 2, name: "João Silva", type: "lead" as const, company: "StartupTech", email: "joao@startup.com" },
+    { id: 3, name: "Ana Costa", type: "lead" as const, company: "ABC Corp", email: "ana@corp.com" }
   ],
   tasks: [
-    { id: 1, name: "Follow-up Maria Santos", type: "task", description: "Agendar reunião", dueDate: "2024-01-20" },
-    { id: 2, name: "Proposta João Silva", type: "task", description: "Enviar proposta comercial", dueDate: "2024-01-22" },
-    { id: 3, name: "Ligação Ana Costa", type: "task", description: "Retorno sobre proposta", dueDate: "2024-01-18" }
+    { id: 1, name: "Follow-up Maria Santos", type: "task" as const, description: "Agendar reunião", dueDate: "2024-01-20" },
+    { id: 2, name: "Proposta João Silva", type: "task" as const, description: "Enviar proposta comercial", dueDate: "2024-01-22" },
+    { id: 3, name: "Ligação Ana Costa", type: "task" as const, description: "Retorno sobre proposta", dueDate: "2024-01-18" }
   ],
   companies: [
-    { id: 1, name: "Empresa XYZ", type: "company", industry: "Tecnologia", size: "Média" },
-    { id: 2, name: "StartupTech", type: "company", industry: "Software", size: "Pequena" },
-    { id: 3, name: "ABC Corp", type: "company", industry: "Consultoria", size: "Grande" }
+    { id: 1, name: "Empresa XYZ", type: "company" as const, industry: "Tecnologia", size: "Média" },
+    { id: 2, name: "StartupTech", type: "company" as const, industry: "Software", size: "Pequena" },
+    { id: 3, name: "ABC Corp", type: "company" as const, industry: "Consultoria", size: "Grande" }
   ]
 };
 
