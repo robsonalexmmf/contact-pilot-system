@@ -6,6 +6,9 @@ import { Dashboard } from "@/components/crm/Dashboard";
 import { LeadsManager } from "@/components/crm/LeadsManager";
 import { SalesPipeline } from "@/components/crm/SalesPipeline";
 import { TasksManager } from "@/components/crm/TasksManager";
+import { ProposalsManager } from "@/components/crm/ProposalsManager";
+import { CalendarManager } from "@/components/crm/CalendarManager";
+import { FinancialManager } from "@/components/crm/FinancialManager";
 import { Reports } from "@/components/crm/Reports";
 import { Settings } from "@/components/crm/Settings";
 import { ChatInterface } from "@/components/crm/ChatInterface";
@@ -24,6 +27,14 @@ const Index = () => {
         return <SalesPipeline />;
       case "tasks":
         return <TasksManager />;
+      case "proposals":
+        return <ProposalsManager />;
+      case "calendar":
+        return <CalendarManager />;
+      case "financial":
+        return <FinancialManager />;
+      case "automation":
+        return <div className="p-8 text-center text-gray-500">Módulo de Automação em desenvolvimento</div>;
       case "reports":
         return <Reports />;
       case "settings":
