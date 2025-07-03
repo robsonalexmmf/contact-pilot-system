@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -109,7 +108,7 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
       const premiumUsers = profiles.filter(p => p.plan === 'Premium' || p.plan === 'Enterprise').length;
       const totalRevenue = transactions
         .filter(t => t.type === 'receita' && t.status === 'Pago')
-        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
       const systemUptime = automations.filter(a => a.status === 'Ativo').length > 0 ? 99.8 : 95.2;
 
       // Calcular crescimento (comparar com mês anterior simulado)
@@ -233,7 +232,7 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
 
       // Usuários recentes baseados em dados reais
       const recentUsersData: RecentUser[] = profiles
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
         .slice(0, 4)
         .map(profile => ({
           id: profile.id,
@@ -241,7 +240,7 @@ export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
           email: profile.email,
           plan: profile.plan || 'free',
           status: profile.status === 'Ativo' ? 'active' : 'inactive',
-          joined: new Date(profile.created_at).toLocaleDateString('pt-BR')
+          joined: new Date(profile.created_at || '').toLocaleDateString('pt-BR')
         }));
 
       setRecentUsers(recentUsersData);
