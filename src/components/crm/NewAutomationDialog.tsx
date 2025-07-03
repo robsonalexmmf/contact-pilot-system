@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Mail, MessageCircle, Calendar, Clock } from "lucide-react";
+import { Plus, Users, Mail, MessageCircle, Calendar, Clock, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface NewAutomationDialogProps {
@@ -24,7 +24,11 @@ const actionTypes = [
   { id: "send_email", name: "Enviar Email", icon: Mail },
   { id: "send_whatsapp", name: "Enviar WhatsApp", icon: MessageCircle },
   { id: "schedule_meeting", name: "Agendar Reunião", icon: Calendar },
-  { id: "assign_user", name: "Atribuir Usuário", icon: Users }
+  { id: "assign_user", name: "Atribuir Usuário", icon: Users },
+  { id: "zapier_webhook", name: "🔁 Zapier Webhook", icon: Zap },
+  { id: "make_webhook", name: "🔁 Make.com Webhook", icon: Zap },
+  { id: "n8n_webhook", name: "🔁 n8n Webhook", icon: Zap },
+  { id: "pabbly_webhook", name: "🔁 Pabbly Webhook", icon: Zap }
 ];
 
 export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogProps) => {
@@ -36,7 +40,8 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
     action: "",
     message: "",
     delay: "",
-    targetGroup: "all"
+    targetGroup: "all",
+    webhookUrl: ""
   });
   const { toast } = useToast();
 
@@ -56,6 +61,17 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
       return;
     }
 
+    // Validar se webhook URL é necessária
+    const webhookActions = ["zapier_webhook", "make_webhook", "n8n_webhook", "pabbly_webhook"];
+    if (webhookActions.includes(formData.action) && !formData.webhookUrl) {
+      toast({
+        title: "Erro",
+        description: "URL do webhook é obrigatória para esta ação",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newAutomation = {
       id: Date.now(),
       name: formData.name,
@@ -67,6 +83,7 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
       message: formData.message,
       delay: formData.delay,
       targetGroup: formData.targetGroup,
+      webhookUrl: formData.webhookUrl,
       status: "Ativo",
       executions: 0,
       successRate: 0,
@@ -90,7 +107,8 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
       action: "",
       message: "",
       delay: "",
-      targetGroup: "all"
+      targetGroup: "all",
+      webhookUrl: ""
     });
     setIsOpen(false);
   };
@@ -102,6 +120,8 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
   const getActionName = (actionId: string) => {
     return actionTypes.find(a => a.id === actionId)?.name || actionId;
   };
+
+  const isWebhookAction = ["zapier_webhook", "make_webhook", "n8n_webhook", "pabbly_webhook"].includes(formData.action);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -170,6 +190,22 @@ export const NewAutomationDialog = ({ onCreateAutomation }: NewAutomationDialogP
               </SelectContent>
             </Select>
           </div>
+
+          {isWebhookAction && (
+            <div>
+              <Label htmlFor="webhookUrl">URL do Webhook *</Label>
+              <Input
+                id="webhookUrl"
+                value={formData.webhookUrl}
+                onChange={(e) => handleInputChange("webhookUrl", e.target.value)}
+                placeholder="https://hooks.zapier.com/hooks/catch/..."
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Cole aqui a URL do webhook da sua plataforma de automação
+              </p>
+            </div>
+          )}
 
           {(formData.action === 'send_email' || formData.action === 'send_whatsapp') && (
             <div>

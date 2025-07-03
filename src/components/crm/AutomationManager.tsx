@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,17 +54,18 @@ const mockAutomations = [
   },
   {
     id: 3,
-    name: "Agendamento Automático",
-    description: "Agenda reunião automaticamente após interesse confirmado",
-    trigger: "Lead Qualificado",
-    action: "Agendar Reunião",
-    triggerType: "form_submitted",
-    actionType: "schedule_meeting",
-    targetGroup: "prospects",
-    status: "Pausado",
-    executions: 78,
-    successRate: 92,
-    lastRun: "2024-01-14 16:45"
+    name: "Zapier - Novo Lead CRM",
+    description: "Dispara automação no Zapier quando novo lead é criado",
+    trigger: "Novo Lead",
+    action: "🔁 Zapier Webhook",
+    triggerType: "new_lead",
+    actionType: "zapier_webhook",
+    webhookUrl: "https://hooks.zapier.com/hooks/catch/123456/abcdef/",
+    targetGroup: "leads",
+    status: "Ativo",
+    executions: 89,
+    successRate: 95,
+    lastRun: "2024-01-15 16:45"
   }
 ];
 
@@ -80,7 +80,11 @@ const actionTypes = [
   { id: "send_email", name: "Enviar Email", icon: Mail },
   { id: "send_whatsapp", name: "Enviar WhatsApp", icon: MessageCircle },
   { id: "schedule_meeting", name: "Agendar Reunião", icon: Calendar },
-  { id: "assign_user", name: "Atribuir Usuário", icon: Users }
+  { id: "assign_user", name: "Atribuir Usuário", icon: Users },
+  { id: "zapier_webhook", name: "🔁 Zapier", icon: Zap },
+  { id: "make_webhook", name: "🔁 Make.com", icon: Zap },
+  { id: "n8n_webhook", name: "🔁 n8n", icon: Zap },
+  { id: "pabbly_webhook", name: "🔁 Pabbly", icon: Zap }
 ];
 
 export const AutomationManager = () => {
@@ -166,7 +170,6 @@ export const AutomationManager = () => {
 
       const result = await executeAutomation(automation);
       
-      // Atualizar estatísticas da automação
       setAutomations(prev => 
         prev.map(a => 
           a.id === automationId 
@@ -193,7 +196,6 @@ export const AutomationManager = () => {
         });
       }
       
-      // Log detalhado dos resultados
       console.log("Resultado da execução:", result);
       
     } catch (error) {
@@ -332,6 +334,13 @@ export const AutomationManager = () => {
                   <div className="mb-3 p-2 bg-gray-50 rounded text-sm">
                     <span className="text-gray-600">Mensagem: </span>
                     <span className="font-medium">{automation.message}</span>
+                  </div>
+                )}
+
+                {automation.webhookUrl && (
+                  <div className="mb-3 p-2 bg-blue-50 rounded text-sm">
+                    <span className="text-gray-600">Webhook URL: </span>
+                    <span className="font-medium text-blue-600">{automation.webhookUrl}</span>
                   </div>
                 )}
 

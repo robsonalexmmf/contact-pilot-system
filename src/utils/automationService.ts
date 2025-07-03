@@ -70,7 +70,7 @@ const getTargetContacts = (targetGroup: string) => {
 };
 
 const executeAutomationAction = async (automation: any, contact: any) => {
-  const { actionType, message } = automation;
+  const { actionType, message, webhookUrl } = automation;
 
   switch (actionType) {
     case "send_whatsapp":
@@ -88,6 +88,22 @@ const executeAutomationAction = async (automation: any, contact: any) => {
     case "assign_user":
       await assignUser(contact);
       break;
+
+    case "zapier_webhook":
+      await triggerZapierWebhook(contact, webhookUrl);
+      break;
+
+    case "make_webhook":
+      await triggerMakeWebhook(contact, webhookUrl);
+      break;
+
+    case "n8n_webhook":
+      await triggerN8nWebhook(contact, webhookUrl);
+      break;
+
+    case "pabbly_webhook":
+      await triggerPabblyWebhook(contact, webhookUrl);
+      break;
     
     default:
       throw new Error(`Ação não suportada: ${actionType}`);
@@ -97,10 +113,8 @@ const executeAutomationAction = async (automation: any, contact: any) => {
 const sendWhatsAppMessage = async (contact: any, message: string) => {
   console.log(`Enviando WhatsApp para ${contact.name} (${contact.phone}): ${message}`);
   
-  // Simula delay de envio
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // Abre WhatsApp (em ambiente real, você integraria com API do WhatsApp Business)
   if (window.confirm(`Abrir WhatsApp para ${contact.name}?\nMensagem: ${message}`)) {
     openWhatsApp(contact.phone, message);
   }
@@ -109,13 +123,11 @@ const sendWhatsAppMessage = async (contact: any, message: string) => {
 const sendEmail = async (contact: any, message: string) => {
   console.log(`Enviando email para ${contact.name} (${contact.email}): ${message}`);
   
-  // Simula delay de envio
   await new Promise(resolve => setTimeout(resolve, 500));
   
   const subject = `Automação - Contato via Salesin Pro`;
   const body = message || `Olá ${contact.name},\n\nEsta é uma mensagem automática do sistema Salesin Pro.\n\nAtenciosamente,\nEquipe Salesin Pro`;
   
-  // Abre cliente de email (em ambiente real, você integraria com API de email)
   if (window.confirm(`Abrir cliente de email para ${contact.name}?\nAssunto: ${subject}`)) {
     openEmailClient(contact.email, subject, body);
   }
@@ -123,22 +135,126 @@ const sendEmail = async (contact: any, message: string) => {
 
 const scheduleMeeting = async (contact: any) => {
   console.log(`Agendando reunião com ${contact.name}`);
-  
-  // Simula delay de agendamento
   await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Em ambiente real, integraria com Google Calendar ou outro sistema
   alert(`Reunião agendada com ${contact.name} para próxima semana!`);
 };
 
 const assignUser = async (contact: any) => {
   console.log(`Atribuindo usuário para ${contact.name}`);
-  
-  // Simula delay de atribuição
   await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Em ambiente real, atualizaria no banco de dados
   alert(`${contact.name} foi atribuído ao usuário responsável!`);
+};
+
+const triggerZapierWebhook = async (contact: any, webhookUrl?: string) => {
+  if (!webhookUrl) {
+    throw new Error("URL do webhook Zapier não configurada");
+  }
+
+  console.log(`Disparando Zapier webhook para ${contact.name}`);
+  
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      mode: "no-cors",
+      body: JSON.stringify({
+        contact: contact,
+        timestamp: new Date().toISOString(),
+        source: "Salesin Pro",
+        platform: "Zapier"
+      }),
+    });
+    
+    console.log(`Zapier webhook enviado para ${contact.name}`);
+  } catch (error) {
+    throw new Error(`Erro ao disparar Zapier webhook: ${error}`);
+  }
+};
+
+const triggerMakeWebhook = async (contact: any, webhookUrl?: string) => {
+  if (!webhookUrl) {
+    throw new Error("URL do webhook Make.com não configurada");
+  }
+
+  console.log(`Disparando Make.com webhook para ${contact.name}`);
+  
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      mode: "no-cors",
+      body: JSON.stringify({
+        contact: contact,
+        timestamp: new Date().toISOString(),
+        source: "Salesin Pro",
+        platform: "Make.com"
+      }),
+    });
+    
+    console.log(`Make.com webhook enviado para ${contact.name}`);
+  } catch (error) {
+    throw new Error(`Erro ao disparar Make.com webhook: ${error}`);
+  }
+};
+
+const triggerN8nWebhook = async (contact: any, webhookUrl?: string) => {
+  if (!webhookUrl) {
+    throw new Error("URL do webhook n8n não configurada");
+  }
+
+  console.log(`Disparando n8n webhook para ${contact.name}`);
+  
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      mode: "no-cors",
+      body: JSON.stringify({
+        contact: contact,
+        timestamp: new Date().toISOString(),
+        source: "Salesin Pro",
+        platform: "n8n"
+      }),
+    });
+    
+    console.log(`n8n webhook enviado para ${contact.name}`);
+  } catch (error) {
+    throw new Error(`Erro ao disparar n8n webhook: ${error}`);
+  }
+};
+
+const triggerPabblyWebhook = async (contact: any, webhookUrl?: string) => {
+  if (!webhookUrl) {
+    throw new Error("URL do webhook Pabbly não configurada");
+  }
+
+  console.log(`Disparando Pabbly webhook para ${contact.name}`);
+  
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      mode: "no-cors",
+      body: JSON.stringify({
+        contact: contact,
+        timestamp: new Date().toISOString(),
+        source: "Salesin Pro",
+        platform: "Pabbly"
+      }),
+    });
+    
+    console.log(`Pabbly webhook enviado para ${contact.name}`);
+  } catch (error) {
+    throw new Error(`Erro ao disparar Pabbly webhook: ${error}`);
+  }
 };
 
 export const validateAutomationTrigger = (triggerType: string, data?: any): boolean => {
@@ -155,7 +271,6 @@ export const validateAutomationTrigger = (triggerType: string, data?: any): bool
       return data?.formSubmitted === true;
     
     case "time_based":
-      // Para gatilhos baseados em tempo, sempre retorna true quando chamado
       return true;
     
     default:
