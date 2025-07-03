@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,9 @@ import {
   Clock
 } from "lucide-react";
 import { useChatManager } from "@/hooks/useChatManager";
+import { useVideoCall } from "@/hooks/useVideoCall";
 import { NewChatDialog } from "./NewChatDialog";
+import { VideoCallInvite } from "./VideoCallInvite";
 
 export const ChatInterface = () => {
   const {
@@ -27,7 +28,10 @@ export const ChatInterface = () => {
     startVideo,
     createNewChat,
     getMessagesForContact,
-    getStats
+    getStats,
+    getActiveCallForContact,
+    joinVideoCall,
+    endVideoCall
   } = useChatManager();
 
   const [selectedChat, setSelectedChat] = useState(chats[0]);
@@ -36,6 +40,7 @@ export const ChatInterface = () => {
 
   const stats = getStats();
   const currentMessages = selectedChat ? getMessagesForContact(selectedChat.id) : [];
+  const activeCall = selectedChat ? getActiveCallForContact(selectedChat.id) : null;
 
   const handleSendMessage = () => {
     if (newMessage.trim() && selectedChat) {
@@ -60,6 +65,18 @@ export const ChatInterface = () => {
   const handleStartVideo = () => {
     if (selectedChat) {
       startVideo(selectedChat);
+    }
+  };
+
+  const handleJoinCall = () => {
+    if (activeCall) {
+      joinVideoCall(activeCall.id);
+    }
+  };
+
+  const handleEndCall = () => {
+    if (activeCall) {
+      endVideoCall(activeCall.id);
     }
   };
 
@@ -253,16 +270,37 @@ export const ChatInterface = () => {
 
               {/* Messages */}
               <CardContent className="p-4">
+                {/* Video Call Invite */}
+                {activeCall && (
+                  <VideoCallInvite
+                    call={activeCall}
+                    contactName={selectedChat.contact}
+                    onJoin={handleJoinCall}
+                    onEnd={handleEndCall}
+                  />
+                )}
+
                 <div className="h-64 overflow-y-auto mb-4 space-y-3">
                   {currentMessages.map((message) => (
-                    <div key={message.id} className={`flex ${message.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={message.id} className={`flex ${message.type === 'sent' ? 'justify-end' : message.type === 'system' ? 'justify-center' : 'justify-start'}`}>
                       <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         message.type === 'sent' 
                           ? 'bg-blue-600 text-white' 
+                          : message.type === 'system'
+                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
                           : 'bg-gray-100 text-gray-900'
                       }`}>
+                        {message.type === 'system' && (
+                          <p className="text-xs font-semibold mb-1">🎥 Sistema</p>
+                        )}
                         <p className="text-sm">{message.message}</p>
-                        <p className={`text-xs mt-1 ${message.type === 'sent' ? 'text-blue-100' : 'text-gray-500'}`}>
+                        <p className={`text-xs mt-1 ${
+                          message.type === 'sent' 
+                            ? 'text-blue-100' 
+                            : message.type === 'system'
+                            ? 'text-yellow-600'
+                            : 'text-gray-500'
+                        }`}>
                           {message.timestamp}
                         </p>
                       </div>

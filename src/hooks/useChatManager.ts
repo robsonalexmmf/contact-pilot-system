@@ -1,5 +1,6 @@
 
 import { useState, useCallback } from 'react';
+import { useVideoCall } from './useVideoCall';
 
 export interface ChatContact {
   id: number;
@@ -19,11 +20,14 @@ export interface ChatMessage {
   sender: string;
   message: string;
   timestamp: string;
-  type: 'sent' | 'received';
+  type: 'sent' | 'received' | 'system';
   contactId: number;
+  videoCallId?: string;
 }
 
 export const useChatManager = () => {
+  const { createVideoCall, joinVideoCall, endVideoCall, getActiveCallForContact } = useVideoCall();
+  
   const [chats, setChats] = useState<ChatContact[]>([
     {
       id: 1,
@@ -113,6 +117,35 @@ export const useChatManager = () => {
     return newMessage;
   }, []);
 
+  const sendVideoInvite = useCallback((contactId: number) => {
+    const contact = chats.find(c => c.id === contactId);
+    if (!contact) return null;
+
+    const videoCall = createVideoCall(contact);
+    
+    const inviteMessage: ChatMessage = {
+      id: Date.now(),
+      sender: "Sistema",
+      message: `Convite para videochamada enviado: ${videoCall.inviteLink}`,
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      type: "system",
+      contactId,
+      videoCallId: videoCall.id
+    };
+
+    setMessages(prev => [...prev, inviteMessage]);
+
+    // Atualizar última mensagem no chat
+    setChats(prev => prev.map(chat => 
+      chat.id === contactId 
+        ? { ...chat, lastMessage: "Convite para videochamada enviado", timestamp: inviteMessage.timestamp }
+        : chat
+    ));
+
+    console.log(`Convite de videochamada enviado para ${contact.contact}`);
+    return videoCall;
+  }, [chats, createVideoCall]);
+
   const markAsRead = useCallback((contactId: number) => {
     setChats(prev => prev.map(chat => 
       chat.id === contactId 
@@ -133,9 +166,14 @@ export const useChatManager = () => {
   }, []);
 
   const startVideo = useCallback((contact: ChatContact) => {
-    console.log(`Iniciando video chamada para ${contact.contact}`);
-    alert(`Iniciando video chamada com ${contact.contact}...\n\nEm um sistema real, aqui seria integrado com plataformas como Zoom, Google Meet ou Microsoft Teams.`);
-  }, []);
+    console.log(`Iniciando videochamada para ${contact.contact}`);
+    const videoCall = sendVideoInvite(contact.id);
+    
+    if (videoCall) {
+      // Mostrar notificação de sucesso
+      alert(`Convite de videochamada enviado para ${contact.contact}!\nLink: ${videoCall.inviteLink}\n\nO cliente poderá acessar a videochamada através do link enviado na conversa.`);
+    }
+  }, [sendVideoInvite]);
 
   const createNewChat = useCallback((contactData: Partial<ChatContact>) => {
     const newChat: ChatContact = {
@@ -178,11 +216,15 @@ export const useChatManager = () => {
     chats,
     messages,
     sendMessage,
+    sendVideoInvite,
     markAsRead,
     startCall,
     startVideo,
     createNewChat,
     getMessagesForContact,
-    getStats
+    getStats,
+    getActiveCallForContact,
+    joinVideoCall,
+    endVideoCall
   };
 };
