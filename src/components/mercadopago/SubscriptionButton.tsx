@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { mercadoPagoService, PLANS } from '@/services/mercadoPagoService';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface SubscriptionButtonProps {
   planType: 'pro' | 'premium';
@@ -15,52 +15,32 @@ export function SubscriptionButton({ planType, children, className }: Subscripti
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubscribe = async () => {
-    setIsLoading(true);
+  const handleSubscribe = () => {
+    // Armazenar o plano selecionado no localStorage para usar após o cadastro
+    localStorage.setItem('selected_plan', planType);
     
-    try {
-      // Configurar o Access Token do Mercado Pago
-      mercadoPagoService.setAccessToken('TEST-da7a3c0c-ad67-48ac-89d3-04d8064b7844');
-      mercadoPagoService.setEnvironment(false); // Modo teste
-      
-      const plan = PLANS[planType];
-      
-      const preference = await mercadoPagoService.createPreference({
-        title: plan.title,
-        quantity: 1,
-        unit_price: plan.price,
-        plan_type: planType
-      });
-
-      // Redirecionar para o checkout do Mercado Pago
-      window.location.href = preference.sandbox_init_point;
-      
-    } catch (error) {
-      console.error('Erro ao criar preferência:', error);
-      toast({
-        title: "Erro no pagamento",
-        description: "Não foi possível processar o pagamento. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    toast({
+      title: "Redirecionando para cadastro",
+      description: "Complete seu cadastro para prosseguir com a assinatura.",
+    });
   };
 
   return (
-    <Button 
-      onClick={handleSubscribe} 
-      disabled={isLoading}
-      className={className}
-    >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Processando...
-        </>
-      ) : (
-        children
-      )}
-    </Button>
+    <Link to="/auth" className="w-full">
+      <Button 
+        onClick={handleSubscribe} 
+        disabled={isLoading}
+        className={className}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processando...
+          </>
+        ) : (
+          children
+        )}
+      </Button>
+    </Link>
   );
 }

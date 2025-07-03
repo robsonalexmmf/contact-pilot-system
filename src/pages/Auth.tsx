@@ -1,22 +1,26 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, AlertCircle, Mail, CheckCircle } from "lucide-react";
 
 export default function Auth() {
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [signupData, setSignupData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [signupData, setSignupData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const { signIn, signUp, user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Verificar se há plano selecionado
+  const selectedPlan = localStorage.getItem('selected_plan');
 
   useEffect(() => {
     if (user) {
@@ -26,25 +30,24 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
     const { error } = await signIn(loginData.email, loginData.password);
     
     if (error) {
       toast({
-        title: 'Erro no login',
+        title: "Erro no login",
         description: error.message,
-        variant: 'destructive'
+        variant: "destructive"
       });
     } else {
       toast({
-        title: 'Login realizado com sucesso!',
-        description: 'Bem-vindo de volta.'
+        title: "Login realizado com sucesso!",
+        description: "Redirecionando para o CRM..."
       });
-      navigate('/app');
     }
     
-    setLoading(false);
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -52,44 +55,80 @@ export default function Auth() {
     
     if (signupData.password !== signupData.confirmPassword) {
       toast({
-        title: 'Erro',
-        description: 'As senhas não coincidem',
-        variant: 'destructive'
+        title: "Senhas diferentes",
+        description: "As senhas não coincidem",
+        variant: "destructive"
       });
       return;
     }
 
-    setLoading(true);
+    if (signupData.password.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
 
     const { error } = await signUp(signupData.email, signupData.password, signupData.name);
     
     if (error) {
-      toast({
-        title: 'Erro no cadastro',
-        description: error.message,
-        variant: 'destructive'
-      });
+      if (error.message.includes('User already registered')) {
+        toast({
+          title: "Email já cadastrado",
+          description: "Este email já está registrado. Tente fazer login.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Erro no cadastro",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
-        title: 'Cadastro realizado com sucesso!',
-        description: 'Verifique seu email para confirmar a conta.'
+        title: "Cadastro realizado!",
+        description: "Verifique seu email para confirmar a conta antes de continuar."
       });
     }
     
-    setLoading(false);
+    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">CRM System</CardTitle>
-          <CardDescription className="text-center">
-            Acesse sua conta ou crie uma nova
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-blue-600">Salesin Pro</CardTitle>
+          <CardDescription>
+            {selectedPlan ? `Cadastre-se para assinar o plano ${selectedPlan.toUpperCase()}` : 'Acesse sua conta ou crie uma nova'}
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          {selectedPlan && (
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <CheckCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <strong>Plano selecionado:</strong> {selectedPlan === 'pro' ? 'Pro (R$ 97/mês)' : 'Premium (R$ 197/mês)'}
+                <br />Após o cadastro, você será direcionado para o pagamento.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Alerta sobre confirmação de email */}
+          <Alert className="mb-6 border-orange-200 bg-orange-50">
+            <Mail className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Importante:</strong> Após se cadastrar, confirme seu email para ter acesso completo ao CRM.
+            </AlertDescription>
+          </Alert>
+
+          <Tabs defaultValue={selectedPlan ? "signup" : "login"} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Cadastro</TabsTrigger>
@@ -105,9 +144,9 @@ export default function Auth() {
                     value={loginData.email}
                     onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
                     required
-                    disabled={loading}
                   />
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Senha</Label>
                   <Input
@@ -116,11 +155,18 @@ export default function Auth() {
                     value={loginData.password}
                     onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
                     required
-                    disabled={loading}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Entrando...' : 'Entrar'}
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -128,15 +174,16 @@ export default function Auth() {
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nome</Label>
+                  <Label htmlFor="signup-name">Nome completo</Label>
                   <Input
                     id="signup-name"
+                    type="text"
                     value={signupData.name}
                     onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
                     required
-                    disabled={loading}
                   />
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
@@ -145,9 +192,9 @@ export default function Auth() {
                     value={signupData.email}
                     onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
                     required
-                    disabled={loading}
                   />
                 </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Senha</Label>
                   <Input
@@ -156,22 +203,29 @@ export default function Auth() {
                     value={signupData.password}
                     onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
                     required
-                    disabled={loading}
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm">Confirmar Senha</Label>
+                  <Label htmlFor="signup-confirm-password">Confirmar senha</Label>
                   <Input
-                    id="signup-confirm"
+                    id="signup-confirm-password"
                     type="password"
                     value={signupData.confirmPassword}
                     onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     required
-                    disabled={loading}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Cadastrando...' : 'Cadastrar'}
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Criando conta...
+                    </>
+                  ) : (
+                    selectedPlan ? 'Cadastrar e Continuar para Pagamento' : 'Criar Conta'
+                  )}
                 </Button>
               </form>
             </TabsContent>

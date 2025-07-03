@@ -1,8 +1,9 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Target, TrendingUp, Shield, Check, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { ArrowRight, Users, Target, TrendingUp, Shield, Check, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SubscriptionButton } from "@/components/mercadopago/SubscriptionButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Landing() {
   return (
@@ -33,6 +34,15 @@ export default function Landing() {
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
           Uma plataforma completa de CRM para aumentar suas vendas, automatizar processos e crescer seu negócio.
         </p>
+        
+        {/* Alert sobre confirmação de email */}
+        <Alert className="max-w-2xl mx-auto mb-8 border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            <strong>Importante:</strong> Após se cadastrar, é extremamente importante confirmar seu email para ter acesso completo ao CRM e todas as funcionalidades.
+          </AlertDescription>
+        </Alert>
+        
         <Link to="/auth">
           <Button size="lg" className="text-lg px-8 py-3">
             Começar Gratuitamente <ArrowRight className="ml-2 h-5 w-5" />
@@ -73,7 +83,15 @@ export default function Landing() {
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-800 mb-4">Escolha o plano ideal para você</h2>
-          <p className="text-xl text-gray-600">Comece grátis e evolua conforme seu negócio cresce</p>
+          <p className="text-xl text-gray-600 mb-6">Comece grátis e evolua conforme seu negócio cresce</p>
+          
+          {/* Alert sobre processo de assinatura */}
+          <Alert className="max-w-4xl mx-auto border-blue-200 bg-blue-50">
+            <Mail className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <strong>Como funciona:</strong> 1) Faça seu cadastro gratuito → 2) Confirme seu email → 3) Escolha e pague seu plano → 4) Acesse todas as funcionalidades do CRM
+            </AlertDescription>
+          </Alert>
         </div>
         
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -159,7 +177,7 @@ export default function Landing() {
             </ul>
             
             <SubscriptionButton planType="pro" className="w-full bg-blue-600 hover:bg-blue-700">
-              Assinar Pro
+              Cadastrar e Assinar Pro
             </SubscriptionButton>
           </div>
 
@@ -203,7 +221,7 @@ export default function Landing() {
             </ul>
             
             <SubscriptionButton planType="premium" className="w-full bg-purple-600 hover:bg-purple-700">
-              Assinar Premium
+              Cadastrar e Assinar Premium
             </SubscriptionButton>
           </div>
         </div>
