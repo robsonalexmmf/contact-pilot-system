@@ -2,227 +2,202 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
-  Search, 
-  Filter, 
+  Users, 
   Plus, 
-  Phone, 
-  Mail, 
+  Search, 
+  Filter,
+  Phone,
+  Mail,
+  MapPin,
   Calendar,
   MoreHorizontal,
   Star,
-  Building,
-  MapPin,
-  Users
+  UserPlus
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
 const mockLeads = [
   {
     id: 1,
     name: "Maria Santos",
     email: "maria@empresa.com",
-    phone: "(11) 99999-9999",
-    company: "Empresa XYZ Ltda",
-    position: "Diretora Comercial",
-    status: "Qualificado",
-    source: "Website",
+    phone: "(11) 99999-1111",
+    company: "Empresa XYZ",
+    status: "Novo",
     score: 85,
-    value: 25000,
-    lastActivity: "2024-01-15",
-    location: "São Paulo, SP",
-    notes: "Interessada em nossa solução premium"
+    source: "Website",
+    lastContact: "2024-01-15",
+    value: 15000
   },
   {
     id: 2,
     name: "João Silva",
-    email: "joao@startup.com",
-    phone: "(21) 88888-8888",
+    email: "joao@startup.com", 
+    phone: "(11) 99999-2222",
     company: "StartupTech",
-    position: "CEO",
-    status: "Novo",
+    status: "Qualificado",
+    score: 92,
     source: "LinkedIn",
-    score: 72,
-    value: 15000,
-    lastActivity: "2024-01-14",
-    location: "Rio de Janeiro, RJ",
-    notes: "Startup em crescimento, orçamento limitado"
+    lastContact: "2024-01-14",
+    value: 25000
   },
   {
     id: 3,
     name: "Ana Costa",
-    email: "ana@corporacao.com",
-    phone: "(31) 77777-7777",
-    company: "Corporação ABC",
-    position: "Gerente de TI",
-    status: "Em Negociação",
+    email: "ana@corp.com",
+    phone: "(11) 99999-3333", 
+    company: "ABC Corp",
+    status: "Proposta",
+    score: 78,
     source: "Indicação",
-    score: 92,
-    value: 45000,
-    lastActivity: "2024-01-13",
-    location: "Belo Horizonte, MG",
-    notes: "Decisão para próxima semana"
+    lastContact: "2024-01-13",
+    value: 45000
   }
 ];
 
 const statusColors: Record<string, string> = {
   "Novo": "bg-blue-100 text-blue-800",
   "Qualificado": "bg-green-100 text-green-800",
-  "Em Negociação": "bg-yellow-100 text-yellow-800",
-  "Perdido": "bg-red-100 text-red-800",
-  "Ganho": "bg-purple-100 text-purple-800"
+  "Proposta": "bg-yellow-100 text-yellow-800",
+  "Negociação": "bg-orange-100 text-orange-800"
 };
 
 export const LeadsManager = () => {
+  const [leads] = useState(mockLeads);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
 
-  const filteredLeads = mockLeads.filter(lead => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === "all" || lead.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const handleNewLead = () => {
+    console.log("Criando novo lead...");
+  };
+
+  const handleCallLead = (leadId: number) => {
+    console.log(`Ligando para lead ${leadId}...`);
+  };
+
+  const handleEmailLead = (leadId: number) => {
+    console.log(`Enviando email para lead ${leadId}...`);
+  };
+
+  const handleScheduleMeeting = (leadId: number) => {
+    console.log(`Agendando reunião com lead ${leadId}...`);
+  };
+
+  const filteredLeads = leads.filter(lead =>
+    lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.company.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-1 gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar leads..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="Novo">Novo</SelectItem>
-              <SelectItem value="Qualificado">Qualificado</SelectItem>
-              <SelectItem value="Em Negociação">Em Negociação</SelectItem>
-              <SelectItem value="Perdido">Perdido</SelectItem>
-              <SelectItem value="Ganho">Ganho</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Leads & Contatos</h1>
+          <p className="text-gray-600">Gerencie seus leads e oportunidades</p>
         </div>
-
-        <Dialog open={isNewLeadOpen} onOpenChange={setIsNewLeadOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Lead
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Adicionar Novo Lead</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo *</Label>
-                <Input id="name" placeholder="Digite o nome" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail *</Label>
-                <Input id="email" type="email" placeholder="email@exemplo.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" placeholder="(11) 99999-9999" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company">Empresa</Label>
-                <Input id="company" placeholder="Nome da empresa" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="position">Cargo</Label>
-                <Input id="position" placeholder="Cargo na empresa" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="source">Origem</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a origem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="website">Website</SelectItem>
-                    <SelectItem value="linkedin">LinkedIn</SelectItem>
-                    <SelectItem value="referral">Indicação</SelectItem>
-                    <SelectItem value="event">Evento</SelectItem>
-                    <SelectItem value="cold-call">Cold Call</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea id="notes" placeholder="Informações adicionais sobre o lead" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsNewLeadOpen(false)}>
-                Cancelar
-              </Button>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-                Adicionar Lead
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={handleNewLead} className="bg-gradient-to-r from-blue-600 to-purple-600">
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Lead
+        </Button>
       </div>
 
-      {/* Leads Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredLeads.map((lead) => (
-          <Card key={lead.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-2">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {lead.name.charAt(0)}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{lead.name}</CardTitle>
-                    <p className="text-sm text-gray-500">{lead.position}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm font-medium">{lead.score}</span>
-                </div>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total de Leads</p>
+                <p className="text-2xl font-bold text-blue-600">{leads.length}</p>
               </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Badge className={statusColors[lead.status]}>
-                  {lead.status}
-                </Badge>
-                <span className="text-sm font-semibold text-green-600">
-                  R$ {lead.value.toLocaleString()}
-                </span>
+              <Users className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Qualificados</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {leads.filter(l => l.status === "Qualificado").length}
+                </p>
+              </div>
+              <Star className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Score Médio</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {Math.round(leads.reduce((sum, lead) => sum + lead.score, 0) / leads.length)}
+                </p>
+              </div>
+              <UserPlus className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Valor Total</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  R$ {leads.reduce((sum, lead) => sum + lead.value, 0).toLocaleString()}
+                </p>
+              </div>
+              <Calendar className="w-8 h-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex space-x-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder="Buscar leads..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Button variant="outline">
+          <Filter className="w-4 h-4 mr-2" />
+          Filtros
+        </Button>
+      </div>
+
+      {/* Leads List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filteredLeads.map((lead) => (
+          <Card key={lead.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{lead.name}</h3>
+                  <p className="text-sm text-gray-600">{lead.company}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className={statusColors[lead.status]}>
+                    {lead.status}
+                  </Badge>
+                  <Button size="sm" variant="ghost">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Building className="w-4 h-4 mr-2" />
-                  {lead.company}
-                </div>
+              <div className="space-y-2 mb-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <Mail className="w-4 h-4 mr-2" />
                   {lead.email}
@@ -233,56 +208,36 @@ export const LeadsManager = () => {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin className="w-4 h-4 mr-2" />
-                  {lead.location}
+                  {lead.source}
                 </div>
               </div>
 
-              <div className="pt-2 border-t">
-                <p className="text-xs text-gray-500 mb-2">
-                  Última atividade: {new Date(lead.lastActivity).toLocaleDateString('pt-BR')}
-                </p>
-                <p className="text-sm text-gray-700 line-clamp-2">{lead.notes}</p>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <span className="text-sm text-gray-600">Score: </span>
+                  <span className="font-medium text-green-600">{lead.score}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600">Valor: </span>
+                  <span className="font-medium">R$ {lead.value.toLocaleString()}</span>
+                </div>
               </div>
 
-              <div className="flex justify-between pt-2">
-                <div className="flex space-x-1">
-                  <Button size="sm" variant="outline">
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Mail className="w-4 h-4" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Calendar className="w-4 h-4" />
-                  </Button>
-                </div>
-                <Button size="sm" variant="ghost">
-                  <MoreHorizontal className="w-4 h-4" />
+              <div className="flex space-x-2">
+                <Button size="sm" variant="outline" onClick={() => handleCallLead(lead.id)}>
+                  <Phone className="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleEmailLead(lead.id)}>
+                  <Mail className="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleScheduleMeeting(lead.id)}>
+                  <Calendar className="w-4 h-4" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-
-      {filteredLeads.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum lead encontrado</h3>
-          <p className="text-gray-500 mb-4">
-            {searchTerm || selectedStatus !== "all" 
-              ? "Tente ajustar os filtros de busca"
-              : "Comece adicionando seu primeiro lead"
-            }
-          </p>
-          <Button onClick={() => setIsNewLeadOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Lead
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

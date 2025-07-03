@@ -2,113 +2,136 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar,
-  Plus,
+  Plus, 
+  Search, 
   Filter,
-  Search,
-  Download,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
   CreditCard,
-  Banknote,
-  PieChart
+  Receipt,
+  AlertCircle
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const mockTransactions = [
   {
     id: 1,
-    type: "receita",
+    type: "Receita",
     description: "Pagamento - Empresa XYZ",
     amount: 45000,
     date: "2024-01-15",
-    status: "pago",
+    status: "Confirmado",
     category: "Vendas",
-    client: "Empresa XYZ",
-    method: "Pix"
+    client: "Maria Santos"
   },
   {
     id: 2,
-    type: "despesa",
-    description: "Marketing Digital",
-    amount: 3500,
+    type: "Despesa",
+    description: "Licença Software",
+    amount: -2500,
     date: "2024-01-14",
-    status: "pago",
-    category: "Marketing",
-    client: "",
-    method: "Cartão"
+    status: "Pago",
+    category: "Operacional",
+    client: ""
   },
   {
     id: 3,
-    type: "receita", 
+    type: "Receita",
     description: "Consultoria - StartupTech",
     amount: 15000,
     date: "2024-01-13",
-    status: "pendente",
-    category: "Consultoria",
-    client: "StartupTech",
-    method: "Boleto"
-  },
-  {
-    id: 4,
-    type: "despesa",
-    description: "Hospedagem e Domínio",
-    amount: 500,
-    date: "2024-01-12",
-    status: "pago",
-    category: "Tecnologia",
-    client: "",
-    method: "Cartão"
+    status: "Pendente",
+    category: "Serviços",
+    client: "João Silva"
   }
 ];
 
+const monthlyData = [
+  { month: 'Jan', receita: 125000, despesa: 45000, lucro: 80000 },
+  { month: 'Fev', receita: 142000, despesa: 52000, lucro: 90000 },
+  { month: 'Mar', receita: 165000, despesa: 48000, lucro: 117000 },
+  { month: 'Abr', receita: 148000, despesa: 55000, lucro: 93000 },
+  { month: 'Mai', receita: 198000, despesa: 62000, lucro: 136000 },
+  { month: 'Jun', receita: 234000, despesa: 58000, lucro: 176000 }
+];
+
 const statusColors: Record<string, string> = {
-  "pago": "bg-green-100 text-green-800",
-  "pendente": "bg-yellow-100 text-yellow-800",
-  "vencido": "bg-red-100 text-red-800",
-  "cancelado": "bg-gray-100 text-gray-800"
+  "Confirmado": "bg-green-100 text-green-800",
+  "Pendente": "bg-yellow-100 text-yellow-800",
+  "Pago": "bg-blue-100 text-blue-800",
+  "Atrasado": "bg-red-100 text-red-800"
 };
 
 export const FinancialManager = () => {
   const [transactions] = useState(mockTransactions);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState("all");
-  const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.client.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "all" || transaction.type === selectedType;
-    return matchesSearch && matchesType;
-  });
+  const handleNewTransaction = () => {
+    console.log("Criando nova transação...");
+  };
 
-  const totalReceitas = transactions.filter(t => t.type === "receita").reduce((sum, t) => sum + t.amount, 0);
-  const totalDespesas = transactions.filter(t => t.type === "despesa").reduce((sum, t) => sum + t.amount, 0);
-  const saldoTotal = totalReceitas - totalDespesas;
+  const handleEditTransaction = (transactionId: number) => {
+    console.log(`Editando transação ${transactionId}...`);
+  };
+
+  const handleGenerateReport = () => {
+    console.log("Gerando relatório financeiro...");
+  };
+
+  const totalReceita = transactions
+    .filter(t => t.type === "Receita" && t.status === "Confirmado")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalDespesa = Math.abs(transactions
+    .filter(t => t.type === "Despesa")
+    .reduce((sum, t) => sum + t.amount, 0));
+
+  const lucroLiquido = totalReceita - totalDespesa;
+
+  const filteredTransactions = transactions.filter(transaction =>
+    transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    transaction.client.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      {/* Cards de Resumo */}
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+          <p className="text-gray-600">Controle suas receitas e despesas</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={handleGenerateReport}>
+            <Receipt className="w-4 h-4 mr-2" />
+            Relatório
+          </Button>
+          <Button onClick={handleNewTransaction} className="bg-gradient-to-r from-blue-600 to-purple-600">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Transação
+          </Button>
+        </div>
+      </div>
+
+      {/* Financial Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Total Receitas</p>
-                <div className="text-2xl font-bold text-green-600">
-                  R$ {totalReceitas.toLocaleString()}
+                <p className="text-sm font-medium text-gray-600">Receita Total</p>
+                <p className="text-2xl font-bold text-green-600">R$ {totalReceita.toLocaleString()}</p>
+                <div className="flex items-center mt-1">
+                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                  <span className="text-sm text-green-600">+15%</span>
                 </div>
               </div>
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              </div>
+              <DollarSign className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -117,14 +140,14 @@ export const FinancialManager = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Total Despesas</p>
-                <div className="text-2xl font-bold text-red-600">
-                  R$ {totalDespesas.toLocaleString()}
+                <p className="text-sm font-medium text-gray-600">Despesas</p>
+                <p className="text-2xl font-bold text-red-600">R$ {totalDespesa.toLocaleString()}</p>
+                <div className="flex items-center mt-1">
+                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+                  <span className="text-sm text-red-600">-5%</span>
                 </div>
               </div>
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                <TrendingDown className="w-4 h-4 text-red-600" />
-              </div>
+              <CreditCard className="w-8 h-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
@@ -133,14 +156,14 @@ export const FinancialManager = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Saldo Total</p>
-                <div className={`text-2xl font-bold ${saldoTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  R$ {saldoTotal.toLocaleString()}
+                <p className="text-sm font-medium text-gray-600">Lucro Líquido</p>
+                <p className="text-2xl font-bold text-blue-600">R$ {lucroLiquido.toLocaleString()}</p>
+                <div className="flex items-center mt-1">
+                  <TrendingUp className="w-4 h-4 text-blue-500 mr-1" />
+                  <span className="text-sm text-blue-600">+23%</span>
                 </div>
               </div>
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <DollarSign className="w-4 h-4 text-blue-600" />
-              </div>
+              <TrendingUp className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -149,209 +172,112 @@ export const FinancialManager = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Transações</p>
-                <div className="text-2xl font-bold text-gray-900">
-                  {transactions.length}
+                <p className="text-sm font-medium text-gray-600">Pendentes</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {transactions.filter(t => t.status === "Pendente").length}
+                </p>
+                <div className="flex items-center mt-1">
+                  <AlertCircle className="w-4 h-4 text-orange-500 mr-1" />
+                  <span className="text-sm text-orange-600">A receber</span>
                 </div>
               </div>
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <PieChart className="w-4 h-4 text-purple-600" />
-              </div>
+              <Calendar className="w-8 h-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros e Ações */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="flex flex-1 gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar transações..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="receita">Receitas</SelectItem>
-              <SelectItem value="despesa">Despesas</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-
-          <Dialog open={isNewTransactionOpen} onOpenChange={setIsNewTransactionOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Transação
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Adicionar Nova Transação</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Tipo *</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="receita">Receita</SelectItem>
-                      <SelectItem value="despesa">Despesa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Valor *</Label>
-                  <Input id="amount" type="number" placeholder="0,00" />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="description">Descrição *</Label>
-                  <Input id="description" placeholder="Descrição da transação" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vendas">Vendas</SelectItem>
-                      <SelectItem value="consultoria">Consultoria</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="tecnologia">Tecnologia</SelectItem>
-                      <SelectItem value="operacional">Operacional</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="method">Forma de Pagamento</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pix">PIX</SelectItem>
-                      <SelectItem value="boleto">Boleto</SelectItem>
-                      <SelectItem value="cartao">Cartão</SelectItem>
-                      <SelectItem value="transferencia">Transferência</SelectItem>
-                      <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="date">Data</Label>
-                  <Input id="date" type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client">Cliente</Label>
-                  <Input id="client" placeholder="Nome do cliente" />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="notes">Observações</Label>
-                  <Textarea id="notes" placeholder="Informações adicionais" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsNewTransactionOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-                  Adicionar Transação
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Lista de Transações */}
+      {/* Financial Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Transações Recentes</CardTitle>
+          <CardTitle>Fluxo de Caixa - Últimos 6 Meses</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={monthlyData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip 
+                formatter={(value, name) => [
+                  `R$ ${Number(value).toLocaleString()}`,
+                  name === 'receita' ? 'Receita' : name === 'despesa' ? 'Despesa' : 'Lucro'
+                ]}
+              />
+              <Line type="monotone" dataKey="receita" stroke="#10B981" strokeWidth={2} />
+              <Line type="monotone" dataKey="despesa" stroke="#EF4444" strokeWidth={2} />
+              <Line type="monotone" dataKey="lucro" stroke="#3B82F6" strokeWidth={3} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Transactions */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Transações Recentes</CardTitle>
+            <div className="flex space-x-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar transações..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button variant="outline">
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
                 <div className="flex items-center space-x-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === 'receita' ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
-                    {transaction.type === 'receita' ? 
-                      <TrendingUp className="w-5 h-5 text-green-600" /> : 
+                  <div className={`p-2 rounded-lg ${transaction.type === 'Receita' ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {transaction.type === 'Receita' ? (
+                      <TrendingUp className={`w-5 h-5 ${transaction.type === 'Receita' ? 'text-green-600' : 'text-red-600'}`} />
+                    ) : (
                       <TrendingDown className="w-5 h-5 text-red-600" />
-                    }
+                    )}
                   </div>
+                  
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      {transaction.description}
-                    </h4>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                    <h3 className="font-semibold text-gray-900">{transaction.description}</h3>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
                       <span>{transaction.category}</span>
-                      {transaction.client && <span>• {transaction.client}</span>}
-                      <span>• {new Date(transaction.date).toLocaleDateString('pt-BR')}</span>
+                      {transaction.client && (
+                        <>
+                          <span>•</span>
+                          <span>{transaction.client}</span>
+                        </>
+                      )}
+                      <span>•</span>
+                      <span>{new Date(transaction.date).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <div className={`text-lg font-semibold ${
-                      transaction.type === 'receita' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'receita' ? '+' : '-'}R$ {transaction.amount.toLocaleString()}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={statusColors[transaction.status]}>
-                        {transaction.status}
-                      </Badge>
-                      <span className="text-xs text-gray-500 flex items-center">
-                        {transaction.method === 'Pix' && <Banknote className="w-3 h-3 mr-1" />}
-                        {(transaction.method === 'Cartão' || transaction.method === 'Boleto') && <CreditCard className="w-3 h-3 mr-1" />}
-                        {transaction.method}
-                      </span>
-                    </div>
+                    <p className={`text-lg font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString()}
+                    </p>
+                    <Badge className={statusColors[transaction.status]}>
+                      {transaction.status}
+                    </Badge>
                   </div>
+                  <Button size="sm" variant="outline" onClick={() => handleEditTransaction(transaction.id)}>
+                    Editar
+                  </Button>
                 </div>
               </div>
             ))}
-
-            {filteredTransactions.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <DollarSign className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma transação encontrada</h3>
-                <p className="text-gray-500 mb-4">
-                  {searchTerm || selectedType !== "all" 
-                    ? "Tente ajustar os filtros de busca"
-                    : "Comece adicionando sua primeira transação"
-                  }
-                </p>
-                <Button onClick={() => setIsNewTransactionOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Transação
-                </Button>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
