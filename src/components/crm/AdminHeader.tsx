@@ -12,13 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/utils/testUsers";
+import { NotificationsDropdown } from "./NotificationsDropdown";
 
 interface AdminHeaderProps {
   activeModule: string;
   toggleSidebar: () => void;
+  setActiveModule?: (module: string) => void;
 }
 
-export const AdminHeader = ({ activeModule, toggleSidebar }: AdminHeaderProps) => {
+export const AdminHeader = ({ activeModule, toggleSidebar, setActiveModule }: AdminHeaderProps) => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
 
@@ -78,10 +80,7 @@ export const AdminHeader = ({ activeModule, toggleSidebar }: AdminHeaderProps) =
           </Badge>
 
           {/* Notificações */}
-          <Button variant="ghost" size="icon" className="relative text-white hover:bg-gray-800">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </Button>
+          <NotificationsDropdown />
 
           {/* Menu do usuário admin */}
           <DropdownMenu>
@@ -104,16 +103,22 @@ export const AdminHeader = ({ activeModule, toggleSidebar }: AdminHeaderProps) =
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-700" />
-              <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+              <DropdownMenuItem 
+                className="text-gray-300 hover:bg-gray-700 cursor-pointer"
+                onClick={() => setActiveModule?.('admin-users')}
+              >
                 <Users className="w-4 h-4 mr-2" />
                 Gerenciar Usuários
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+              <DropdownMenuItem 
+                className="text-gray-300 hover:bg-gray-700 cursor-pointer"
+                onClick={() => setActiveModule?.('admin-monitoring')}
+              >
                 <Activity className="w-4 h-4 mr-2" />
                 Monitor do Sistema
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-700" />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:bg-gray-700">
+              <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:bg-gray-700 cursor-pointer">
                 <LogOut className="w-4 h-4 mr-2" />
                 Sair do Admin
               </DropdownMenuItem>

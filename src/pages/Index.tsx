@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/crm/Sidebar";
@@ -39,6 +40,7 @@ import { AdminUserManagement } from "@/components/crm/AdminUserManagement";
 import { AdminSystem } from "@/components/crm/AdminSystem";
 import { AdminMonitoring } from "@/components/crm/AdminMonitoring";
 import { AdminBilling } from "@/components/crm/AdminBilling";
+import { AdminReports } from "@/components/crm/AdminReports";
 import { AdminNotifications } from "@/components/crm/AdminNotifications";
 import { AdminSecurity } from "@/components/crm/AdminSecurity";
 import { AdminLogs } from "@/components/crm/AdminLogs";
@@ -147,7 +149,7 @@ const Index = () => {
         case "admin-billing":
           return <AdminBilling />;
         case "admin-reports":
-          return <div className="p-6"><h2 className="text-2xl font-bold">Relatórios Admin</h2><p>Módulo em desenvolvimento</p></div>;
+          return <AdminReports />;
         case "admin-notifications":
           return <AdminNotifications />;
         case "admin-security":
@@ -243,6 +245,7 @@ const Index = () => {
           <AdminHeader 
             activeModule={activeModule}
             toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            setActiveModule={setActiveModule}
           />
           
           <main className="flex-1 p-6 overflow-auto bg-gray-100">
