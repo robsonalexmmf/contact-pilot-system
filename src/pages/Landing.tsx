@@ -1,27 +1,30 @@
+
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Target, TrendingUp, Shield, Check } from "lucide-react";
+import { ArrowRight, Users, Target, TrendingUp, Shield, Check, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <nav className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-blue-600">Salesin Pro</div>
-          <div className="space-x-4">
-            <Link to="/auth">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link to="/auth">
-              <Button>Começar Grátis</Button>
-            </Link>
-          </div>
-        </nav>
+      {/* Fixed Header */}
+      <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <nav className="flex items-center justify-between">
+            <div className="text-2xl font-bold text-blue-600">Salesin Pro</div>
+            <div className="space-x-4">
+              <Link to="/auth">
+                <Button variant="ghost">Login</Button>
+              </Link>
+              <Link to="/auth">
+                <Button>Começar Grátis</Button>
+              </Link>
+            </div>
+          </nav>
+        </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
+      {/* Hero Section - Added top padding for fixed header */}
+      <section className="container mx-auto px-4 py-20 pt-32 text-center">
         <h1 className="text-5xl font-bold text-gray-800 mb-6">
           Gerencie seus clientes com
           <span className="text-blue-600"> inteligência</span>
@@ -217,6 +220,84 @@ export default function Landing() {
           </Link>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            {/* Company Info */}
+            <div>
+              <div className="text-2xl font-bold text-blue-400 mb-4">Salesin Pro</div>
+              <p className="text-gray-300 mb-4">
+                A plataforma completa de CRM que transforma a gestão de relacionamento com clientes.
+              </p>
+              <div className="flex space-x-4">
+                <Facebook className="h-6 w-6 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors" />
+                <Twitter className="h-6 w-6 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors" />
+                <Instagram className="h-6 w-6 text-gray-400 hover:text-pink-400 cursor-pointer transition-colors" />
+                <Linkedin className="h-6 w-6 text-gray-400 hover:text-blue-400 cursor-pointer transition-colors" />
+              </div>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Produto</h3>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-white transition-colors">Funcionalidades</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Preços</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Integrações</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Segurança</a></li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Suporte</h3>
+              <ul className="space-y-2 text-gray-300">
+                <li><a href="#" className="hover:text-white transition-colors">Central de Ajuda</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Documentação</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Tutoriais</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Status do Sistema</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contato</a></li>
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Contato</h3>
+              <div className="space-y-3 text-gray-300">
+                <div className="flex items-center">
+                  <Mail className="h-5 w-5 mr-3" />
+                  <span>contato@salesinpro.com</span>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="h-5 w-5 mr-3" />
+                  <span>(11) 9999-8888</span>
+                </div>
+                <div className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-3" />
+                  <span>São Paulo, SP - Brasil</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Footer */}
+          <div className="border-t border-gray-700 mt-12 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="text-gray-400 text-sm">
+                © 2024 Salesin Pro. Todos os direitos reservados.
+              </div>
+              <div className="flex space-x-6 mt-4 md:mt-0 text-gray-400 text-sm">
+                <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
+                <a href="#" className="hover:text-white transition-colors">Política de Privacidade</a>
+                <a href="#" className="hover:text-white transition-colors">Cookies</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
