@@ -1,10 +1,12 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Settings as SettingsIcon, 
   Users, 
@@ -12,10 +14,14 @@ import {
   Shield,
   Zap,
   CreditCard,
-  Database
+  Database,
+  Plus,
+  Edit,
+  Trash2,
+  Save
 } from "lucide-react";
 
-const teamMembers = [
+const initialTeamMembers = [
   {
     id: 1,
     name: "João Silva",
@@ -43,6 +49,121 @@ const teamMembers = [
 ];
 
 export const Settings = () => {
+  const { toast } = useToast();
+  const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
+  const [editingMember, setEditingMember] = useState<number | null>(null);
+  const [companyData, setCompanyData] = useState({
+    name: "Minha Empresa Ltda",
+    cnpj: "12.345.678/0001-99",
+    address: "Rua das Empresas, 123 - São Paulo, SP",
+    phone: "(11) 99999-9999",
+    email: "contato@empresa.com"
+  });
+  const [notifications, setNotifications] = useState({
+    newLeads: true,
+    overdueTasks: true,
+    weeklyReports: false,
+    closedDeals: true
+  });
+  const [security, setSecurity] = useState({
+    twoFactor: false,
+    ipRestriction: false,
+    singleSession: true
+  });
+
+  const handleSaveCompany = () => {
+    toast({
+      title: "Configurações Salvas",
+      description: "As informações da empresa foram atualizadas com sucesso",
+    });
+    console.log("Dados da empresa salvos:", companyData);
+  };
+
+  const handleInviteUser = () => {
+    const newUser = {
+      id: teamMembers.length + 1,
+      name: "Novo Usuário",
+      email: "novo@empresa.com",
+      role: "Vendedor",
+      status: "Pendente",
+      lastLogin: "Nunca"
+    };
+    setTeamMembers([...teamMembers, newUser]);
+    toast({
+      title: "Convite Enviado",
+      description: "Um convite foi enviado para o novo usuário",
+    });
+  };
+
+  const handleEditMember = (id: number) => {
+    setEditingMember(editingMember === id ? null : id);
+  };
+
+  const handleDeleteMember = (id: number) => {
+    setTeamMembers(teamMembers.filter(member => member.id !== id));
+    toast({
+      title: "Usuário Removido",
+      description: "O usuário foi removido da equipe",
+      variant: "destructive"
+    });
+  };
+
+  const handleBackupData = () => {
+    toast({
+      title: "Backup Iniciado",
+      description: "O backup dos dados foi iniciado e será concluído em breve",
+    });
+    console.log("Backup dos dados iniciado");
+  };
+
+  const handleConfigureIntegrations = () => {
+    toast({
+      title: "Integrações",
+      description: "Redirecionando para configurações de integração...",
+    });
+    console.log("Configurar integrações");
+  };
+
+  const handleSecurityLogs = () => {
+    toast({
+      title: "Logs de Segurança",
+      description: "Abrindo logs de segurança do sistema",
+    });
+    console.log("Visualizar logs de segurança");
+  };
+
+  const handleManageSubscription = () => {
+    toast({
+      title: "Assinatura",
+      description: "Redirecionando para gerenciamento de assinatura...",
+    });
+    console.log("Gerenciar assinatura");
+  };
+
+  const handleChangePassword = () => {
+    toast({
+      title: "Alterar Senha",
+      description: "Um link para alterar a senha foi enviado para seu e-mail",
+    });
+    console.log("Alterar senha solicitado");
+  };
+
+  const handleNotificationChange = (key: keyof typeof notifications) => {
+    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    toast({
+      title: "Notificação Atualizada",
+      description: "Suas preferências de notificação foram salvas",
+    });
+  };
+
+  const handleSecurityChange = (key: keyof typeof security) => {
+    setSecurity(prev => ({ ...prev, [key]: !prev[key] }));
+    toast({
+      title: "Segurança Atualizada",
+      description: "Suas configurações de segurança foram salvas",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Settings Header */}
@@ -64,31 +185,55 @@ export const Settings = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="company-name">Nome da Empresa</Label>
-                <Input id="company-name" defaultValue="Minha Empresa Ltda" />
+                <Input 
+                  id="company-name" 
+                  value={companyData.name}
+                  onChange={(e) => setCompanyData(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company-cnpj">CNPJ</Label>
-                <Input id="company-cnpj" defaultValue="12.345.678/0001-99" />
+                <Input 
+                  id="company-cnpj" 
+                  value={companyData.cnpj}
+                  onChange={(e) => setCompanyData(prev => ({ ...prev, cnpj: e.target.value }))}
+                />
               </div>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="company-address">Endereço</Label>
-              <Input id="company-address" defaultValue="Rua das Empresas, 123 - São Paulo, SP" />
+              <Input 
+                id="company-address" 
+                value={companyData.address}
+                onChange={(e) => setCompanyData(prev => ({ ...prev, address: e.target.value }))}
+              />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="company-phone">Telefone</Label>
-                <Input id="company-phone" defaultValue="(11) 99999-9999" />
+                <Input 
+                  id="company-phone" 
+                  value={companyData.phone}
+                  onChange={(e) => setCompanyData(prev => ({ ...prev, phone: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company-email">E-mail</Label>
-                <Input id="company-email" defaultValue="contato@empresa.com" />
+                <Input 
+                  id="company-email" 
+                  value={companyData.email}
+                  onChange={(e) => setCompanyData(prev => ({ ...prev, email: e.target.value }))}
+                />
               </div>
             </div>
             
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
+            <Button 
+              className="bg-gradient-to-r from-blue-600 to-purple-600"
+              onClick={handleSaveCompany}
+            >
+              <Save className="w-4 h-4 mr-2" />
               Salvar Alterações
             </Button>
           </CardContent>
@@ -100,19 +245,19 @@ export const Settings = () => {
             <CardTitle>Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={handleBackupData}>
               <Database className="w-4 h-4 mr-2" />
               Backup dos Dados
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={handleConfigureIntegrations}>
               <Zap className="w-4 h-4 mr-2" />
               Configurar Integrações
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={handleSecurityLogs}>
               <Shield className="w-4 h-4 mr-2" />
               Logs de Segurança
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={handleManageSubscription}>
               <CreditCard className="w-4 h-4 mr-2" />
               Gerenciar Assinatura
             </Button>
@@ -128,7 +273,12 @@ export const Settings = () => {
               <Users className="w-5 h-5 mr-2" />
               Gestão de Equipe
             </div>
-            <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600">
+            <Button 
+              size="sm" 
+              className="bg-gradient-to-r from-blue-600 to-purple-600"
+              onClick={handleInviteUser}
+            >
+              <Plus className="w-4 h-4 mr-2" />
               Convidar Usuário
             </Button>
           </CardTitle>
@@ -151,9 +301,22 @@ export const Settings = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge variant="outline">{member.role}</Badge>
-                  <Badge className="bg-green-100 text-green-800">{member.status}</Badge>
-                  <Button size="sm" variant="outline">
-                    Editar
+                  <Badge className={member.status === "Ativo" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                    {member.status}
+                  </Badge>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleEditMember(member.id)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleDeleteMember(member.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -177,7 +340,10 @@ export const Settings = () => {
                 <h4 className="font-medium">Novos Leads</h4>
                 <p className="text-sm text-gray-500">Receber notificação por e-mail</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={notifications.newLeads} 
+                onCheckedChange={() => handleNotificationChange('newLeads')}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -185,7 +351,10 @@ export const Settings = () => {
                 <h4 className="font-medium">Tarefas Vencidas</h4>
                 <p className="text-sm text-gray-500">Alertas de tarefas em atraso</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={notifications.overdueTasks} 
+                onCheckedChange={() => handleNotificationChange('overdueTasks')}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -193,7 +362,10 @@ export const Settings = () => {
                 <h4 className="font-medium">Relatórios Semanais</h4>
                 <p className="text-sm text-gray-500">Resumo semanal por e-mail</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={notifications.weeklyReports} 
+                onCheckedChange={() => handleNotificationChange('weeklyReports')}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -201,7 +373,10 @@ export const Settings = () => {
                 <h4 className="font-medium">Negócios Fechados</h4>
                 <p className="text-sm text-gray-500">Quando um negócio é fechado</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={notifications.closedDeals} 
+                onCheckedChange={() => handleNotificationChange('closedDeals')}
+              />
             </div>
           </CardContent>
         </Card>
@@ -220,7 +395,10 @@ export const Settings = () => {
                 <h4 className="font-medium">Autenticação 2FA</h4>
                 <p className="text-sm text-gray-500">Camada extra de segurança</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={security.twoFactor} 
+                onCheckedChange={() => handleSecurityChange('twoFactor')}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -228,7 +406,10 @@ export const Settings = () => {
                 <h4 className="font-medium">Login por IP</h4>
                 <p className="text-sm text-gray-500">Restringir acesso por IP</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={security.ipRestriction} 
+                onCheckedChange={() => handleSecurityChange('ipRestriction')}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -236,10 +417,13 @@ export const Settings = () => {
                 <h4 className="font-medium">Sessão Única</h4>
                 <p className="text-sm text-gray-500">Apenas uma sessão ativa</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={security.singleSession} 
+                onCheckedChange={() => handleSecurityChange('singleSession')}
+              />
             </div>
             
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" onClick={handleChangePassword}>
               Alterar Senha
             </Button>
           </CardContent>

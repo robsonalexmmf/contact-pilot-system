@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { useToast } from "@/hooks/use-toast";
+import { DateRange } from "react-day-picker";
 
 const salesData = [
   { month: 'Jan', vendas: 65000, leads: 120, conversao: 15.2 },
@@ -44,13 +45,8 @@ const performanceData = [
   { name: 'Pedro Oliveira', leads: 29, deals: 8, revenue: 95000 }
 ];
 
-interface DateRange {
-  from: Date | undefined;
-  to: Date | undefined;
-}
-
 export const Reports = () => {
-  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedPeriod, setSelectedPeriod] = useState("last-6-months");
   const [selectedMetric, setSelectedMetric] = useState("all");
   const [selectedSource, setSelectedSource] = useState("all");
