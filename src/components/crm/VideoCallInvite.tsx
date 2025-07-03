@@ -23,6 +23,14 @@ export const VideoCallInvite = ({ call, contactName, onJoin, onEnd }: VideoCallI
     });
   };
 
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(call.roomId);
+    toast({
+      title: "Código copiado!",
+      description: "O código da reunião foi copiado para a área de transferência.",
+    });
+  };
+
   const getStatusColor = () => {
     switch (call.status) {
       case 'waiting': return 'text-yellow-600 bg-yellow-50';
@@ -54,8 +62,24 @@ export const VideoCallInvite = ({ call, contactName, onJoin, onEnd }: VideoCallI
           </span>
         </div>
         
+        {/* Código da Reunião em Destaque */}
+        <div className="bg-blue-50 p-4 rounded-lg mb-3 border border-blue-200">
+          <p className="text-sm font-medium text-blue-800 mb-2">Código da Reunião:</p>
+          <div className="flex items-center space-x-2">
+            <code className="bg-white px-3 py-2 rounded text-lg font-mono font-bold text-blue-900 flex-1 border text-center tracking-wider">
+              {call.roomId}
+            </code>
+            <Button size="sm" variant="outline" onClick={copyRoomCode}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-blue-600 mt-2 text-center">
+            Use este código no Google Meet para entrar na reunião
+          </p>
+        </div>
+
         <div className="bg-gray-50 p-3 rounded-lg mb-3">
-          <p className="text-sm text-gray-600 mb-2">Link da videochamada:</p>
+          <p className="text-sm text-gray-600 mb-2">Link direto da videochamada:</p>
           <div className="flex items-center space-x-2">
             <code className="bg-white px-2 py-1 rounded text-xs flex-1 border">
               {call.inviteLink}
