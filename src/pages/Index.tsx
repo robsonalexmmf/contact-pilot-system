@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/crm/Sidebar";
@@ -35,6 +34,8 @@ import { CommandPalette } from "@/components/crm/CommandPalette";
 import { ComplianceManager } from "@/components/crm/ComplianceManager";
 import { PlanLimitDialog } from "@/components/crm/PlanLimitDialog";
 import { isPlanActive, getUsageInfo, isFeatureAvailable } from "@/utils/planService";
+import { AdminDashboard } from "@/components/crm/AdminDashboard";
+import { isAdminUser } from "@/utils/testUsers";
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -115,6 +116,11 @@ const Index = () => {
   };
 
   const renderActiveModule = () => {
+    // Se for admin e estiver no dashboard, mostrar dashboard admin
+    if (activeModule === "dashboard" && isAdminUser()) {
+      return <AdminDashboard />;
+    }
+
     switch (activeModule) {
       case "dashboard":
         return <Dashboard />;
