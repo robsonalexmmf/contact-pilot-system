@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface NewLeadDialogProps {
   onCreateLead?: (lead: any) => void;
@@ -34,6 +35,18 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes to force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -44,8 +57,8 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
     
     if (!formData.name || !formData.email) {
       toast({
-        title: "Erro",
-        description: "Nome e email são obrigatórios",
+        title: t("error"),
+        description: t("nameEmailRequired"),
         variant: "destructive"
       });
       return;
@@ -62,7 +75,7 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
         company: formData.company,
         status: "Novo",
         score: Math.floor(Math.random() * 30) + 70,
-        source: formData.source || "Manual",
+        source: formData.source || t("manual"),
         lastContact: new Date().toISOString().split('T')[0],
         value: parseInt(formData.value) || 0,
         notes: formData.notes
@@ -75,8 +88,8 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
       }
 
       toast({
-        title: "Sucesso!",
-        description: `Lead ${formData.name} foi criado com sucesso`,
+        title: t("success"),
+        description: `${t("leads")} ${formData.name} ${t("leadCreatedSuccess")}`,
       });
 
       // Reset form
@@ -94,8 +107,8 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
     } catch (error) {
       console.error("Erro ao criar lead:", error);
       toast({
-        title: "Erro",
-        description: "Erro ao criar lead. Tente novamente.",
+        title: t("error"),
+        description: t("errorCreatingLead"),
         variant: "destructive"
       });
     } finally {
@@ -108,31 +121,31 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
       <DialogTrigger asChild>
         <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
           <Plus className="w-4 h-4 mr-2" />
-          Novo Lead
+          {t("createNewLead").replace("Criar Novo Lead", "").replace("Create New Lead", "").replace("Crear Nuevo Lead", "") || "Novo Lead"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Criar Novo Lead</DialogTitle>
+          <DialogTitle>{t("createNewLead")}</DialogTitle>
           <DialogDescription>
-            Preencha as informações do novo lead para adicioná-lo ao sistema.
+            {t("fillLeadInfo")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome *</Label>
+                <Label htmlFor="name">{t("name")} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="Nome do lead"
+                  placeholder={t("leadName")}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t("email")} *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -146,7 +159,7 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone">{t("phone")}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -155,37 +168,37 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="company">Empresa</Label>
+                <Label htmlFor="company">{t("company")}</Label>
                 <Input
                   id="company"
                   value={formData.company}
                   onChange={(e) => handleInputChange("company", e.target.value)}
-                  placeholder="Nome da empresa"
+                  placeholder={t("companyName")}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="source">Origem</Label>
+                <Label htmlFor="source">{t("source")}</Label>
                 <Select value={formData.source} onValueChange={(value) => handleInputChange("source", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione a origem" />
+                    <SelectValue placeholder={t("selectSource")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                    <SelectItem value="Indicação">Indicação</SelectItem>
-                    <SelectItem value="Google Ads">Google Ads</SelectItem>
-                    <SelectItem value="Facebook">Facebook</SelectItem>
-                    <SelectItem value="Email Marketing">Email Marketing</SelectItem>
-                    <SelectItem value="Evento">Evento</SelectItem>
-                    <SelectItem value="Manual">Manual</SelectItem>
+                    <SelectItem value="Website">{t("website")}</SelectItem>
+                    <SelectItem value="LinkedIn">{t("linkedin")}</SelectItem>
+                    <SelectItem value="Indicação">{t("referral")}</SelectItem>
+                    <SelectItem value="Google Ads">{t("googleAds")}</SelectItem>
+                    <SelectItem value="Facebook">{t("facebook")}</SelectItem>
+                    <SelectItem value="Email Marketing">{t("emailMarketing")}</SelectItem>
+                    <SelectItem value="Evento">{t("event")}</SelectItem>
+                    <SelectItem value="Manual">{t("manual")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="value">Valor Estimado (R$)</Label>
+                <Label htmlFor="value">{t("estimatedValue")}</Label>
                 <Input
                   id="value"
                   type="number"
@@ -197,22 +210,22 @@ export const NewLeadDialog = ({ onCreateLead }: NewLeadDialogProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
+              <Label htmlFor="notes">{t("notes")}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
-                placeholder="Informações adicionais sobre o lead..."
+                placeholder={t("additionalInfo")}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Criando..." : "Criar Lead"}
+              {isSubmitting ? t("creating") : t("createLead")}
             </Button>
           </DialogFooter>
         </form>

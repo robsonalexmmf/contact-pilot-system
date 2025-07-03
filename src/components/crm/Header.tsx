@@ -5,28 +5,43 @@ import { NotificationsDropdown } from "./NotificationsDropdown";
 import { UserDropdown } from "./UserDropdown";
 import { GlobalSearch } from "./GlobalSearch";
 import { NewLeadDialog } from "./NewLeadDialog";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
   activeModule: string;
   toggleSidebar: () => void;
 }
 
-const moduleNames: Record<string, string> = {
-  dashboard: "Dashboard",
-  leads: "Gestão de Leads",
-  pipeline: "Pipeline de Vendas",
-  tasks: "Tarefas & Atividades",
-  reports: "Relatórios",
-  settings: "Configurações",
-  chat: "Chat & Atendimento",
-  compliance: "Compliance & Governança",
-  proposals: "Propostas",
-  calendar: "Agenda",
-  financial: "Financeiro",
-  automation: "Automação"
-};
-
 export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
+  const { t } = useLanguage();
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes to force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, []);
+
+  const moduleNames: Record<string, string> = {
+    dashboard: t("dashboard"),
+    leads: t("leadManagement"),
+    pipeline: t("salesPipeline"),
+    tasks: t("tasksActivities"),
+    reports: t("reports"),
+    settings: t("settings"),
+    chat: t("chatSupport"),
+    compliance: t("complianceGovernance"),
+    proposals: t("proposals"),
+    calendar: t("calendar"),
+    financial: t("financial"),
+    automation: t("automation")
+  };
+
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -44,7 +59,7 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
           
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {moduleNames[activeModule] || "Salesin Pro"}
+              {moduleNames[activeModule] || t("salesinPro")}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {new Date().toLocaleDateString('pt-BR', { 
@@ -64,10 +79,9 @@ export const Header = ({ activeModule, toggleSidebar }: HeaderProps) => {
 
           <NotificationsDropdown />
 
-          <UserDropdown userName="João Silva" userRole="Administrador" />
+          <UserDropdown userName="João Silva" userRole={t("administrator")} />
         </div>
       </div>
     </header>
   );
 };
-

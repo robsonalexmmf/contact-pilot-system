@@ -1,3 +1,4 @@
+
 import { 
   ContextMenu, 
   ContextMenuContent, 
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
 import { openEmailClient, emailTemplates } from "@/utils/emailUtils";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useEffect, useState } from "react";
 
 interface Lead {
   id: number;
@@ -56,6 +59,19 @@ export const LeadActionsMenu = ({
   onConvertToCustomer,
   onMarkAsFavorite
 }: LeadActionsMenuProps) => {
+  const { t } = useLanguage();
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes to force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, []);
+
   const handleAction = (action: string) => {
     console.log(`Ação '${action}' executada para lead:`, lead.name);
     
@@ -64,7 +80,7 @@ export const LeadActionsMenu = ({
         onEdit(lead);
         break;
       case 'delete':
-        if (window.confirm(`Tem certeza que deseja excluir o lead ${lead.name}?`)) {
+        if (window.confirm(`${t('confirmDeleteLead')} ${lead.name}?`)) {
           onDelete(lead.id);
         }
         break;
@@ -103,37 +119,37 @@ export const LeadActionsMenu = ({
       <ContextMenuContent className="w-56 bg-white border shadow-md">
         <ContextMenuItem onClick={() => handleAction('call')} className="cursor-pointer">
           <Phone className="w-4 h-4 mr-2" />
-          Abrir WhatsApp
+          {t('openWhatsApp')}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => handleAction('email')} className="cursor-pointer">
           <Mail className="w-4 h-4 mr-2" />
-          Enviar email
+          {t('sendEmail')}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => handleAction('meeting')} className="cursor-pointer">
           <Calendar className="w-4 h-4 mr-2" />
-          Agendar reunião
+          {t('scheduleMeeting')}
         </ContextMenuItem>
         
         <ContextMenuSeparator />
         
         <ContextMenuItem onClick={() => handleAction('proposal')} className="cursor-pointer">
           <FileText className="w-4 h-4 mr-2" />
-          Criar proposta
+          {t('createProposal')}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => handleAction('convert')} className="cursor-pointer">
           <User className="w-4 h-4 mr-2" />
-          Converter em cliente
+          {t('convertToCustomer')}
         </ContextMenuItem>
         
         <ContextMenuSeparator />
         
         <ContextMenuItem onClick={() => handleAction('favorite')} className="cursor-pointer">
           <Star className="w-4 h-4 mr-2" />
-          Marcar como favorito
+          {t('markAsFavorite')}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => handleAction('edit')} className="cursor-pointer">
           <Edit className="w-4 h-4 mr-2" />
-          Editar lead
+          {t('editLead')}
         </ContextMenuItem>
         
         <ContextMenuSeparator />
@@ -143,7 +159,7 @@ export const LeadActionsMenu = ({
           className="cursor-pointer text-red-600 focus:text-red-600"
         >
           <Trash className="w-4 h-4 mr-2" />
-          Excluir lead
+          {t('deleteLead')}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
