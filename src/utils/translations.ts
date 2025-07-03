@@ -1,4 +1,3 @@
-
 export const translations = {
   'pt-BR': {
     // Header e navegação
@@ -83,6 +82,7 @@ export const translations = {
     
     // Header módulos
     salesinPro: 'Salesin Pro',
+    administrator: 'Administrador',
     
     // LeadActionsMenu
     openWhatsApp: 'Abrir WhatsApp',
@@ -152,9 +152,7 @@ export const translations = {
     syncCalendar: 'Sincronize compromissos e reuniões',
     whatsappIntegration: 'Integração com WhatsApp para atendimento',
     syncEmails: 'Sincronize e-mails automaticamente',
-    automation: 'Automação',
     communication: 'Comunicação',
-    email: 'E-mail',
     available: 'Disponíveis',
     searchIntegrations: 'Buscar integrações...',
     configurations: 'Configurações',
@@ -306,7 +304,6 @@ export const translations = {
     manageSubscription: 'Gerenciar Assinatura',
     teamManagement: 'Gestão de Equipe',
     inviteUser: 'Convidar Usuário',
-    administrator: 'Administrador',
     salesManager: 'Gerente de Vendas',
     salesperson: 'Vendedor',
     active: 'Ativo',
@@ -418,6 +415,7 @@ export const translations = {
     
     // Header módulos
     salesinPro: 'Salesin Pro',
+    administrator: 'Administrator',
     
     // LeadActionsMenu
     openWhatsApp: 'Open WhatsApp',
@@ -487,9 +485,7 @@ export const translations = {
     syncCalendar: 'Sync appointments and meetings',
     whatsappIntegration: 'WhatsApp integration for support',
     syncEmails: 'Sync emails automatically',
-    automation: 'Automation',
     communication: 'Communication',
-    email: 'Email',
     available: 'Available',
     searchIntegrations: 'Search integrations...',
     configurations: 'Configurations',
@@ -641,7 +637,6 @@ export const translations = {
     manageSubscription: 'Manage Subscription',
     teamManagement: 'Team Management',
     inviteUser: 'Invite User',
-    administrator: 'Administrator',
     salesManager: 'Sales Manager',
     salesperson: 'Salesperson',
     active: 'Active',
@@ -753,6 +748,7 @@ export const translations = {
     
     // Header módulos
     salesinPro: 'Salesin Pro',
+    administrator: 'Administrador',
     
     // LeadActionsMenu
     openWhatsApp: 'Abrir WhatsApp',
@@ -822,9 +818,7 @@ export const translations = {
     syncCalendar: 'Sincroniza citas y reuniones',
     whatsappIntegration: 'Integración con WhatsApp para soporte',
     syncEmails: 'Sincroniza emails automáticamente',
-    automation: 'Automatización',
     communication: 'Comunicación',
-    email: 'Email',
     available: 'Disponibles',
     searchIntegrations: 'Buscar integraciones...',
     configurations: 'Configuraciones',
@@ -976,7 +970,6 @@ export const translations = {
     manageSubscription: 'Gestionar Suscripción',
     teamManagement: 'Gestión de Equipo',
     inviteUser: 'Invitar Usuario',
-    administrator: 'Administrador',
     salesManager: 'Gerente de Ventas',
     salesperson: 'Vendedor',
     active: 'Activo',
