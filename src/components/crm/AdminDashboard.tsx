@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -56,7 +55,25 @@ const recentUsers = [
   { id: 4, name: "Ana Oliveira", email: "ana@consultoria.com", plan: "premium", status: "active", joined: "2 sem atrás" }
 ];
 
-export const AdminDashboard = () => {
+interface AdminDashboardProps {
+  setActiveModule?: (module: string) => void;
+}
+
+export const AdminDashboard = ({ setActiveModule }: AdminDashboardProps) => {
+  const handleSettingsClick = () => {
+    console.log('Navegando para configurações...');
+    if (setActiveModule) {
+      setActiveModule('admin-settings');
+    }
+  };
+
+  const handleUserManagementClick = () => {
+    console.log('Navegando para gerenciar usuários...');
+    if (setActiveModule) {
+      setActiveModule('admin-users');
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'text-red-600 bg-red-50';
@@ -93,11 +110,20 @@ export const AdminDashboard = () => {
           <p className="text-gray-600 dark:text-gray-400">Visão geral do sistema e métricas administrativas</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleSettingsClick}
+            className="hover:bg-gray-100 transition-colors"
+          >
             <Settings className="w-4 h-4 mr-2" />
             Configurações
           </Button>
-          <Button size="sm">
+          <Button 
+            size="sm"
+            onClick={handleUserManagementClick}
+            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          >
             <UserCheck className="w-4 h-4 mr-2" />
             Gerenciar Usuários
           </Button>
@@ -109,7 +135,7 @@ export const AdminDashboard = () => {
         {adminKpiData.map((kpi, index) => {
           const Icon = kpi.icon;
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow">
+            <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/crm/Sidebar";
@@ -134,12 +133,12 @@ const Index = () => {
       // Se for admin e não estiver em módulo admin, redirecionar para admin-dashboard
       if (!activeModule.startsWith('admin-')) {
         setActiveModule('admin-dashboard');
-        return <AdminDashboard />;
+        return <AdminDashboard setActiveModule={setActiveModule} />;
       }
 
       switch (activeModule) {
         case "admin-dashboard":
-          return <AdminDashboard />;
+          return <AdminDashboard setActiveModule={setActiveModule} />;
         case "admin-users":
           return <AdminUserManagement />;
         case "admin-system":
@@ -161,7 +160,7 @@ const Index = () => {
         case "admin-settings":
           return <AdminSettings />;
         default:
-          return <AdminDashboard />;
+          return <AdminDashboard setActiveModule={setActiveModule} />;
       }
     }
 
