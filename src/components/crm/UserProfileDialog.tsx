@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,11 +32,47 @@ export const UserProfileDialog = ({ open, onClose, userName, userRole }: UserPro
     bio: "Especialista em vendas com mais de 5 anos de experiência",
     location: "São Paulo, SP"
   });
+  const [profileImage, setProfileImage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageClick = () => {
+    console.log("Clicou no botão da câmera");
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      console.log("Arquivo selecionado:", file.name);
+      
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: "Arquivo muito grande",
+          description: "Por favor, selecione uma imagem menor que 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setProfileImage(result);
+        console.log("Imagem carregada com sucesso");
+        
+        toast({
+          title: "Foto atualizada!",
+          description: "Sua foto de perfil foi alterada. Não esqueça de salvar as alterações.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +80,7 @@ export const UserProfileDialog = ({ open, onClose, userName, userRole }: UserPro
     setIsSubmitting(true);
     
     try {
-      console.log("Atualizando perfil:", profileData);
+      console.log("Atualizando perfil:", { ...profileData, profileImage });
       
       // Simular salvamento
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -79,18 +115,27 @@ export const UserProfileDialog = ({ open, onClose, userName, userRole }: UserPro
         <div className="flex flex-col items-center space-y-4 py-4">
           <div className="relative">
             <Avatar className="w-20 h-20">
-              <AvatarImage src="" />
+              <AvatarImage src={profileImage} />
               <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-lg">
                 <User className="w-8 h-8" />
               </AvatarFallback>
             </Avatar>
             <Button
+              type="button"
               size="sm"
               variant="outline"
-              className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full"
+              className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full hover:bg-blue-50"
+              onClick={handleImageClick}
             >
               <Camera className="w-4 h-4" />
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
           </div>
           
           <div className="text-center">
