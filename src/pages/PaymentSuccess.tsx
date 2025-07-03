@@ -1,17 +1,39 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useSearchParams } from 'react-router-dom';
+import { EmailConfirmationDialog } from '@/components/EmailConfirmationDialog';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [planType, setPlanType] = useState('');
+  
   const paymentId = searchParams.get('payment_id');
   const status = searchParams.get('status');
 
   useEffect(() => {
-    // Aqui você pode fazer uma chamada para confirmar o pagamento
-    // e atualizar o plano do usuário
+    // Verificar se há dados salvos do pagamento
+    const savedEmail = localStorage.getItem('payment_user_email');
+    const savedPlan = localStorage.getItem('payment_plan_type');
+    
+    if (savedEmail && savedPlan) {
+      setUserEmail(savedEmail);
+      setPlanType(savedPlan);
+      
+      // Mostrar popup após um pequeno delay
+      setTimeout(() => {
+        setShowEmailDialog(true);
+      }, 1000);
+      
+      // Limpar dados salvos
+      localStorage.removeItem('payment_user_email');
+      localStorage.removeItem('payment_plan_type');
+      localStorage.removeItem('selected_plan');
+    }
+
     console.log('Pagamento aprovado:', { paymentId, status });
   }, [paymentId, status]);
 
@@ -28,7 +50,14 @@ export default function PaymentSuccess() {
         
         <p className="text-gray-600 mb-6">
           Parabéns! Seu pagamento foi processado com sucesso. 
-          Seu plano já está ativo e você pode começar a usar todos os recursos.
+          {planType && (
+            <>
+              <br />
+              <span className="font-medium text-blue-600">
+                Plano {planType === 'pro' ? 'Pro' : 'Premium'} ativado!
+              </span>
+            </>
+          )}
         </p>
 
         {paymentId && (
@@ -39,9 +68,9 @@ export default function PaymentSuccess() {
         )}
 
         <div className="space-y-3">
-          <Link to="/app" className="w-full">
+          <Link to="/auth" className="w-full">
             <Button className="w-full" size="lg">
-              Acessar CRM <ArrowRight className="ml-2 h-4 w-4" />
+              Fazer Login no CRM <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
           
@@ -52,6 +81,13 @@ export default function PaymentSuccess() {
           </Link>
         </div>
       </div>
+
+      {/* Dialog de confirmação de email */}
+      <EmailConfirmationDialog 
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        userEmail={userEmail}
+      />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,9 +23,47 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/app');
+      // Se usuário está logado e há plano selecionado, processar pagamento
+      if (selectedPlan) {
+        handlePaymentRedirect();
+      } else {
+        navigate('/app');
+      }
     }
   }, [user, navigate]);
+
+  const handlePaymentRedirect = async () => {
+    if (!user || !selectedPlan) return;
+    
+    try {
+      const { createPayment, getPaymentAmount } = await import('@/services/mercadoPagoService');
+      
+      const paymentData = {
+        amount: getPaymentAmount(selectedPlan as 'pro' | 'premium'),
+        description: `Assinatura ${selectedPlan === 'pro' ? 'Pro' : 'Premium'} - Salesin CRM`,
+        userEmail: user.email || '',
+        planType: selectedPlan as 'pro' | 'premium'
+      };
+
+      const response = await createPayment(paymentData);
+      
+      if (response.success && response.redirectUrl) {
+        // Salvar dados para mostrar popup após pagamento
+        localStorage.setItem('payment_user_email', user.email || '');
+        localStorage.setItem('payment_plan_type', selectedPlan);
+        
+        // Redirecionar para página de sucesso
+        window.location.href = response.redirectUrl;
+      }
+    } catch (error) {
+      console.error('Erro ao processar pagamento:', error);
+      toast({
+        title: "Erro no pagamento",
+        description: "Ocorreu um erro ao processar o pagamento. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +80,7 @@ export default function Auth() {
     } else {
       toast({
         title: "Login realizado com sucesso!",
-        description: "Redirecionando para o CRM..."
+        description: selectedPlan ? "Redirecionando para pagamento..." : "Redirecionando para o CRM..."
       });
     }
     
@@ -92,7 +129,9 @@ export default function Auth() {
     } else {
       toast({
         title: "Cadastro realizado!",
-        description: "Verifique seu email para confirmar a conta antes de continuar."
+        description: selectedPlan 
+          ? "Verifique seu email para confirmar a conta. Após confirmar, você será direcionado para o pagamento."
+          : "Verifique seu email para confirmar a conta antes de continuar."
       });
     }
     
