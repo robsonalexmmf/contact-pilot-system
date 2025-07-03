@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -285,8 +284,8 @@ const actionIcons: Record<string, any> = {
 export const AutomationManager = () => {
   const [automations, setAutomations] = useState(mockAutomations);
   const [editingAutomation, setEditingAutomation] = useState<any>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpenState] = useState(false);
+  const [isNewDialogOpen, setIsNewDialogOpenState] = useState(false);
   const [preselectedTrigger, setPreselectedTrigger] = useState<string>("");
   const [preselectedAction, setPreselectedAction] = useState<string>("");
   const [executingAutomations, setExecutingAutomations] = useState<Set<number>>(new Set());
@@ -328,7 +327,7 @@ export const AutomationManager = () => {
     const automation = automations.find(a => a.id === automationId);
     if (automation) {
       setEditingAutomation(automation);
-      setIsEditDialogOpen(true);
+      setIsEditDialogOpenState(true);
     }
   };
 
@@ -413,7 +412,7 @@ export const AutomationManager = () => {
   };
 
   const handleDialogClose = () => {
-    setIsNewDialogOpen(false);
+    setIsNewDialogOpenState(false);
     setPreselectedTrigger("");
     setPreselectedAction("");
   };
@@ -431,7 +430,7 @@ export const AutomationManager = () => {
           <p className="text-gray-600">20 tipos de automações inteligentes funcionando em tempo real</p>
         </div>
         <Button 
-          onClick={() => setIsNewDialogOpen(true)}
+          onClick={() => setIsNewDialogOpenState(true)}
           className="bg-gradient-to-r from-blue-600 to-purple-600"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -628,11 +627,9 @@ export const AutomationManager = () => {
 
       {/* New Automation Dialog */}
       <NewAutomationDialog 
-        isOpen={isNewDialogOpen}
+        open={isNewDialogOpen}
         onClose={handleDialogClose}
-        onCreateAutomation={handleCreateAutomation}
-        preselectedTrigger={preselectedTrigger}
-        preselectedAction={preselectedAction}
+        onSave={handleCreateAutomation}
       />
 
       {/* Edit Dialog */}
@@ -640,7 +637,7 @@ export const AutomationManager = () => {
         automation={editingAutomation}
         isOpen={isEditDialogOpen}
         onClose={() => {
-          setIsEditDialogOpen(false);
+          setIsEditDialogOpenState(false);
           setEditingAutomation(null);
         }}
         onUpdateAutomation={handleUpdateAutomation}

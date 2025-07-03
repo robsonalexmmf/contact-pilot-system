@@ -40,7 +40,9 @@ import {
   Star,
   Globe,
   Smartphone,
-  FileText
+  FileText,
+  Package,
+  Database
 } from "lucide-react";
 
 interface NewAutomationDialogProps {
