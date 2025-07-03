@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -183,25 +184,6 @@ export const AdminIntegrations = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Sincronizar integrações ativas com o CRM
-  const syncIntegrationsWithCRM = () => {
-    const activeIntegrations = integrations.filter(int => int.enabled && int.isGlobal);
-    
-    const crmIntegrations = activeIntegrations.map(int => ({
-      id: int.id,
-      name: int.name,
-      description: int.description,
-      enabled: int.enabled,
-      webhookUrl: int.webhookUrl,
-      apiKey: int.apiKey,
-      category: int.category,
-      isFromAdmin: true
-    }));
-    
-    localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
-    console.log('Integrações sincronizadas com o CRM:', crmIntegrations);
   };
 
   const handleToggleIntegration = async (id: string) => {
