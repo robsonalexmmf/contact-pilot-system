@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1026,9 +1025,11 @@ export const AdminSettings = () => {
             id="import-settings"
           />
           <label htmlFor="import-settings">
-            <Button variant="outline" as="span">
-              <Upload className="w-4 h-4 mr-2" />
-              Importar
+            <Button variant="outline" asChild>
+              <span>
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </span>
             </Button>
           </label>
           <Button variant="outline" onClick={handleExportSettings}>
@@ -1160,7 +1161,7 @@ export const AdminSettings = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 {tabs.find(t => t.id === activeTab)?.icon && (
-                  <tabs.find(t => t.id === activeTab)!.icon className="w-5 h-5 mr-2" />
+                  React.createElement(tabs.find(t => t.id === activeTab)!.icon, { className: "w-5 h-5 mr-2" })
                 )}
                 {tabs.find(t => t.id === activeTab)?.label}
               </CardTitle>
