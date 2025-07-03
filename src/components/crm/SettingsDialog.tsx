@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,39 +19,164 @@ interface SettingsDialogProps {
   onClose: () => void;
 }
 
+interface SettingsState {
+  notifications: {
+    email: boolean;
+    push: boolean;
+    desktop: boolean;
+    leadUpdates: boolean;
+    taskReminders: boolean;
+  };
+  appearance: {
+    theme: string;
+    language: string;
+    timezone: string;
+  };
+  privacy: {
+    showOnlineStatus: boolean;
+    allowDataCollection: boolean;
+    shareAnalytics: boolean;
+  };
+}
+
+const defaultSettings: SettingsState = {
+  notifications: {
+    email: true,
+    push: true,
+    desktop: false,
+    leadUpdates: true,
+    taskReminders: true
+  },
+  appearance: {
+    theme: "system",
+    language: "pt-BR",
+    timezone: "America/Sao_Paulo"
+  },
+  privacy: {
+    showOnlineStatus: true,
+    allowDataCollection: false,
+    shareAnalytics: true
+  }
+};
+
 export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
-  const [settings, setSettings] = useState({
-    notifications: {
-      email: true,
-      push: true,
-      desktop: false,
-      leadUpdates: true,
-      taskReminders: true
-    },
-    appearance: {
-      theme: "light",
-      language: "pt-BR",
-      timezone: "America/Sao_Paulo"
-    },
-    privacy: {
-      showOnlineStatus: true,
-      allowDataCollection: false,
-      shareAnalytics: true
-    }
-  });
+  const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
 
-  const handleSave = () => {
-    console.log("Salvando configurações:", settings);
-    toast({
-      title: "Configurações salvas!",
-      description: "Suas preferências foram atualizadas com sucesso.",
-    });
+  // Carregar configurações do localStorage ao abrir o dialog
+  useEffect(() => {
+    if (open) {
+      const savedSettings = localStorage.getItem('userSettings');
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          setSettings(parsed);
+          console.log("Configurações carregadas:", parsed);
+        } catch (error) {
+          console.error("Erro ao carregar configurações:", error);
+          setSettings(defaultSettings);
+        }
+      } else {
+        setSettings(defaultSettings);
+      }
+      setHasChanges(false);
+    }
+  }, [open]);
+
+  // Aplicar tema quando mudança for detectada
+  useEffect(() => {
+    applyTheme(settings.appearance.theme);
+  }, [settings.appearance.theme]);
+
+  const applyTheme = (theme: string) => {
+    const root = document.documentElement;
+    
+    switch (theme) {
+      case 'light':
+        root.classList.remove('dark');
+        break;
+      case 'dark':
+        root.classList.add('dark');
+        break;
+      case 'system':
+        // Detectar preferência do sistema
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+        break;
+    }
+    
+    console.log(`Tema aplicado: ${theme}`);
+  };
+
+  const handleNotificationChange = (key: keyof SettingsState['notifications'], value: boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      notifications: { ...prev.notifications, [key]: value }
+    }));
+    setHasChanges(true);
+    console.log(`Notificação ${key} alterada para:`, value);
+  };
+
+  const handleAppearanceChange = (key: keyof SettingsState['appearance'], value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      appearance: { ...prev.appearance, [key]: value }
+    }));
+    setHasChanges(true);
+    console.log(`Aparência ${key} alterada para:`, value);
+  };
+
+  const handlePrivacyChange = (key: keyof SettingsState['privacy'], value: boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      privacy: { ...prev.privacy, [key]: value }
+    }));
+    setHasChanges(true);
+    console.log(`Privacidade ${key} alterada para:`, value);
+  };
+
+  const handleSave = async () => {
+    try {
+      // Salvar no localStorage
+      localStorage.setItem('userSettings', JSON.stringify(settings));
+      
+      // Simular salvamento no servidor
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log("Configurações salvas:", settings);
+      
+      toast({
+        title: "Configurações salvas!",
+        description: "Suas preferências foram atualizadas com sucesso.",
+      });
+      
+      setHasChanges(false);
+      onClose();
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar suas configurações. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    if (hasChanges) {
+      const confirm = window.confirm('Você tem alterações não salvas. Deseja realmente sair?');
+      if (!confirm) return;
+    }
     onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleCancel}>
       <DialogContent className="sm:max-w-[600px] sm:max-h-[700px]">
         <DialogHeader>
           <DialogTitle>Configurações</DialogTitle>
@@ -79,12 +203,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.notifications.email}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, email: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handleNotificationChange('email', checked)}
                 />
               </div>
 
@@ -95,12 +214,18 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.notifications.push}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, push: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handleNotificationChange('push', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Notificações Desktop</Label>
+                  <p className="text-sm text-gray-500">Notificações na área de trabalho</p>
+                </div>
+                <Switch
+                  checked={settings.notifications.desktop}
+                  onCheckedChange={(checked) => handleNotificationChange('desktop', checked)}
                 />
               </div>
 
@@ -111,12 +236,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.notifications.leadUpdates}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, leadUpdates: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handleNotificationChange('leadUpdates', checked)}
                 />
               </div>
 
@@ -127,12 +247,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.notifications.taskReminders}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      notifications: { ...prev.notifications, taskReminders: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handleNotificationChange('taskReminders', checked)}
                 />
               </div>
             </div>
@@ -144,12 +259,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 <Label>Tema</Label>
                 <Select
                   value={settings.appearance.theme}
-                  onValueChange={(value) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      appearance: { ...prev.appearance, theme: value }
-                    }))
-                  }
+                  onValueChange={(value) => handleAppearanceChange('theme', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -166,12 +276,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 <Label>Idioma</Label>
                 <Select
                   value={settings.appearance.language}
-                  onValueChange={(value) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      appearance: { ...prev.appearance, language: value }
-                    }))
-                  }
+                  onValueChange={(value) => handleAppearanceChange('language', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -188,12 +293,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 <Label>Fuso Horário</Label>
                 <Select
                   value={settings.appearance.timezone}
-                  onValueChange={(value) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      appearance: { ...prev.appearance, timezone: value }
-                    }))
-                  }
+                  onValueChange={(value) => handleAppearanceChange('timezone', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -202,6 +302,8 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                     <SelectItem value="America/Sao_Paulo">São Paulo (GMT-3)</SelectItem>
                     <SelectItem value="America/New_York">New York (GMT-5)</SelectItem>
                     <SelectItem value="Europe/London">London (GMT+0)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Los Angeles (GMT-8)</SelectItem>
+                    <SelectItem value="Asia/Tokyo">Tokyo (GMT+9)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -217,12 +319,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.privacy.showOnlineStatus}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      privacy: { ...prev.privacy, showOnlineStatus: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handlePrivacyChange('showOnlineStatus', checked)}
                 />
               </div>
 
@@ -233,12 +330,7 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.privacy.allowDataCollection}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      privacy: { ...prev.privacy, allowDataCollection: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handlePrivacyChange('allowDataCollection', checked)}
                 />
               </div>
 
@@ -249,25 +341,29 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
                 </div>
                 <Switch
                   checked={settings.privacy.shareAnalytics}
-                  onCheckedChange={(checked) =>
-                    setSettings(prev => ({
-                      ...prev,
-                      privacy: { ...prev.privacy, shareAnalytics: checked }
-                    }))
-                  }
+                  onCheckedChange={(checked) => handlePrivacyChange('shareAnalytics', checked)}
                 />
               </div>
             </div>
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave}>
-            Salvar Configurações
-          </Button>
+        <div className="flex justify-between items-center pt-4 border-t">
+          <div className="text-sm text-gray-500">
+            {hasChanges && "• Alterações não salvas"}
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleCancel}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={!hasChanges}
+              className={hasChanges ? "bg-gradient-to-r from-blue-600 to-purple-600" : ""}
+            >
+              Salvar Configurações
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
