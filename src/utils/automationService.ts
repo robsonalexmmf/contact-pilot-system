@@ -1,4 +1,3 @@
-
 import { openWhatsApp, whatsappTemplates } from './whatsappUtils';
 import { openEmailClient, emailTemplates } from './emailUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +16,7 @@ interface Contact {
   whatsapp?: string;
   type: string;
   company?: string;
+  user_id?: string;
 }
 
 export const executeAutomation = async (automation: any): Promise<ExecutionResult> => {
@@ -119,7 +119,8 @@ const getTargetContactsFromDB = async (targetGroup: string): Promise<Contact[]> 
       phone: lead.phone || undefined,
       whatsapp: lead.whatsapp || undefined,
       type: lead.status || 'lead',
-      company: lead.company || undefined
+      company: lead.company || undefined,
+      user_id: lead.user_id
     }));
 
     console.log(`📈 Encontrados ${contacts.length} contatos`);
@@ -226,7 +227,8 @@ const scheduleMeeting = async (contact: Contact) => {
       end_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(), // 1 hora
       type: 'Reunião',
       status: 'Agendado',
-      lead_id: contact.id
+      lead_id: contact.id,
+      user_id: contact.user_id || ''
     });
 
     if (error) throw error;
@@ -436,11 +438,26 @@ const logAutomationExecution = async (automationId: string, contactId: string, s
 
 const updateAutomationStats = async (automationId: string, successCount: number) => {
   try {
-    // Atualizar estatísticas da automação no banco
+    // Primeiro, buscar os valores atuais
+    const { data: currentAutomation, error: fetchError } = await supabase
+      .from('automations')
+      .select('executions')
+      .eq('id', automationId)
+      .single();
+
+    if (fetchError) {
+      console.error("Erro ao buscar automação atual:", fetchError);
+      return;
+    }
+
+    // Calcular novo valor de execuções
+    const newExecutions = (currentAutomation?.executions || 0) + successCount;
+
+    // Atualizar com o novo valor
     const { error } = await supabase
       .from('automations')
       .update({ 
-        executions: supabase.sql`executions + ${successCount}`,
+        executions: newExecutions,
         last_run: new Date().toISOString()
       })
       .eq('id', automationId);
