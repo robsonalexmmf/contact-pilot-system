@@ -1,68 +1,297 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { 
   BarChart3,
   Users,
   TrendingUp,
   DollarSign,
   Download,
-  Calendar,
-  Filter,
-  FileText,
   PieChart,
   Activity,
-  Target
+  Target,
+  RefreshCw
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
-
-const monthlyData = [
-  { month: 'Jan', users: 120, revenue: 45000, leads: 350 },
-  { month: 'Fev', users: 145, revenue: 52000, leads: 420 },
-  { month: 'Mar', users: 162, revenue: 58000, leads: 480 },
-  { month: 'Abr', users: 178, revenue: 65000, leads: 520 },
-  { month: 'Mai', users: 195, revenue: 72000, leads: 580 },
-  { month: 'Jun', users: 210, revenue: 78000, leads: 620 }
-];
-
-const planDistribution = [
-  { name: 'Free', value: 45, color: '#94A3B8' },
-  { name: 'Pro', value: 30, color: '#3B82F6' },
-  { name: 'Premium', value: 25, color: '#8B5CF6' }
-];
-
-const topUsers = [
-  { name: 'João Silva', company: 'Tech Corp', revenue: 15000, leads: 85, plan: 'Premium' },
-  { name: 'Maria Santos', company: 'StartupX', revenue: 12000, leads: 70, plan: 'Premium' },
-  { name: 'Pedro Costa', company: 'Consultoria ABC', revenue: 8500, leads: 55, plan: 'Pro' },
-  { name: 'Ana Oliveira', company: 'Vendas Plus', revenue: 7200, leads: 48, plan: 'Pro' },
-  { name: 'Carlos Lima', company: 'Negócios 360', revenue: 6800, leads: 42, plan: 'Pro' }
-];
-
-const systemMetrics = [
-  { metric: 'Uptime', value: '99.9%', trend: '+0.1%', color: 'text-green-600' },
-  { metric: 'Tempo de Resposta', value: '145ms', trend: '-12ms', color: 'text-green-600' },
-  { metric: 'Taxa de Erro', value: '0.01%', trend: '-0.02%', color: 'text-green-600' },
-  { metric: 'Armazenamento', value: '78%', trend: '+5%', color: 'text-yellow-600' }
-];
+import { useAdminReportsData } from "@/hooks/useAdminReportsData";
 
 export const AdminReports = () => {
   const [dateRange, setDateRange] = useState("30d");
-  const [reportType, setReportType] = useState("overview");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
 
-  const totalUsers = monthlyData[monthlyData.length - 1]?.users || 0;
-  const totalRevenue = monthlyData.reduce((sum, data) => sum + data.revenue, 0);
-  const totalLeads = monthlyData.reduce((sum, data) => sum + data.leads, 0);
-  const avgRevenuePerUser = Math.round(totalRevenue / totalUsers);
+  const { 
+    metrics, 
+    monthlyData, 
+    topUsers, 
+    planDistribution, 
+    systemMetrics, 
+    loading, 
+    refreshData 
+  } = useAdminReportsData();
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    refreshData();
+    
+    toast({
+      title: "Dados Atualizados",
+      description: "Relatórios atualizados com sucesso!",
+    });
+    
+    setTimeout(() => setIsRefreshing(false), 1500);
+  };
 
   const exportReport = (type: string) => {
-    console.log(`Exportando relatório: ${type}`);
-    // Simulação de export
-    alert(`Relatório ${type} exportado com sucesso!`);
+    try {
+      console.log(`Exportando relatório: ${type}`);
+      
+      // Criar conteúdo do relatório
+      const reportData = {
+        metrics,
+        monthlyData,
+        topUsers,
+        planDistribution,
+        systemMetrics,
+        generatedAt: new Date().toISOString()
+      };
+
+      // Gerar CSV com dados dos relatórios
+      const csvHeaders = ['Métrica', 'Valor', 'Crescimento'];
+      const csvRows = [
+        csvHeaders.join(','),
+        `"Total de Usuários","${metrics.totalUsers}","+${metrics.growth.users}%"`,
+        `"Receita Total","R$ ${metrics.totalRevenue.toLocaleString('pt-BR')}","+${metrics.growth.revenue}%"`,
+        `"Total de Leads","${metrics.totalLeads}","+${metrics.growth.leads}%"`,
+        `"Receita por Usuário","R$ ${metrics.avgRevenuePerUser.toLocaleString('pt-BR')}","+${metrics.growth.avgRevenue}%"`,
+        '',
+        'Top Usuários,Empresa,Receita,Leads,Plano',
+        ...topUsers.map(user => 
+          `"${user.name}","${user.company}","R$ ${user.revenue.toLocaleString('pt-BR')}","${user.leads}","${user.plan}"`
+        ),
+        '',
+        'Distribuição de Planos,Percentual',
+        ...planDistribution.map(plan => `"${plan.name}","${plan.value}%"`)
+      ];
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `relatorio-admin-${dateRange}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Relatório Exportado",
+        description: `Relatório ${type} foi baixado com sucesso!`,
+      });
+
+    } catch (error) {
+      console.error('Erro na exportação:', error);
+      toast({
+        title: "Erro na Exportação",
+        description: "Não foi possível exportar o relatório. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
+
+  const generateDetailedReport = () => {
+    try {
+      // Gerar relatório HTML detalhado
+      const reportHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Relatório Administrativo Detalhado - ${new Date().toLocaleDateString('pt-BR')}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #333; line-height: 1.6; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .summary { background: #f8f9fa; padding: 20px; margin-bottom: 30px; border-radius: 8px; }
+            .metric { display: inline-block; margin: 10px 20px; text-align: center; padding: 15px; background: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .metric-value { font-size: 24px; font-weight: bold; color: #28a745; }
+            .metric-label { font-size: 14px; color: #6c757d; margin-top: 5px; }
+            .growth { font-size: 12px; color: #28a745; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+            th { background-color: #f8f9fa; font-weight: bold; }
+            .positive { color: #28a745; font-weight: bold; }
+            .chart-section { margin: 30px 0; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6c757d; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Relatório Administrativo Detalhado</h1>
+            <p>Período: ${dateRange} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+          </div>
+          
+          <div class="summary">
+            <h2>Resumo Executivo</h2>
+            <div class="metric">
+              <div class="metric-value">${metrics.totalUsers}</div>
+              <div class="metric-label">Total de Usuários</div>
+              <div class="growth">+${metrics.growth.users}% vs período anterior</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">R$ ${metrics.totalRevenue.toLocaleString('pt-BR')}</div>
+              <div class="metric-label">Receita Total</div>
+              <div class="growth">+${metrics.growth.revenue}% vs período anterior</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">${metrics.totalLeads}</div>
+              <div class="metric-label">Total de Leads</div>
+              <div class="growth">+${metrics.growth.leads}% vs período anterior</div>
+            </div>
+            <div class="metric">
+              <div class="metric-value">R$ ${Math.round(metrics.avgRevenuePerUser).toLocaleString('pt-BR')}</div>
+              <div class="metric-label">Receita por Usuário</div>
+              <div class="growth">+${metrics.growth.avgRevenue}% vs período anterior</div>
+            </div>
+          </div>
+
+          <div class="chart-section">
+            <h2>Crescimento Mensal</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th>Usuários</th>
+                  <th>Receita</th>
+                  <th>Leads</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${monthlyData.map(data => `
+                  <tr>
+                    <td>${data.month}</td>
+                    <td>${data.users}</td>
+                    <td>R$ ${data.revenue.toLocaleString('pt-BR')}</td>
+                    <td>${data.leads}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <h2>Top Usuários por Receita</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Empresa</th>
+                <th>Receita</th>
+                <th>Leads</th>
+                <th>Plano</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topUsers.map(user => `
+                <tr>
+                  <td>${user.name}</td>
+                  <td>${user.company}</td>
+                  <td class="positive">R$ ${user.revenue.toLocaleString('pt-BR')}</td>
+                  <td>${user.leads}</td>
+                  <td>${user.plan}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <h2>Distribuição de Planos</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Plano</th>
+                <th>Percentual</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${planDistribution.map(plan => `
+                <tr>
+                  <td>${plan.name}</td>
+                  <td>${plan.value}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <h2>Métricas do Sistema</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Valor</th>
+                <th>Tendência</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${systemMetrics.map(metric => `
+                <tr>
+                  <td>${metric.metric}</td>
+                  <td>${metric.value}</td>
+                  <td>${metric.trend}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>Relatório gerado automaticamente pelo sistema CRM em ${new Date().toLocaleString('pt-BR')}</p>
+            <p>Dados baseados em informações reais do banco de dados</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Download do relatório
+      const blob = new Blob([reportHTML], { type: 'text/html;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `relatorio-administrativo-detalhado-${new Date().toISOString().split('T')[0]}.html`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Relatório Detalhado Gerado",
+        description: "Relatório HTML completo foi baixado com sucesso!",
+      });
+
+    } catch (error) {
+      console.error('Erro ao gerar relatório detalhado:', error);
+      toast({
+        title: "Erro no Relatório",
+        description: "Não foi possível gerar o relatório detalhado. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p>Carregando relatórios administrativos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -84,9 +313,22 @@ export const AdminReports = () => {
               <SelectItem value="1y">1 ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => exportReport('completo')}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </Button>
+          <Button variant="outline" onClick={() => exportReport('completo')}>
             <Download className="w-4 h-4 mr-2" />
-            Exportar
+            Exportar CSV
+          </Button>
+          <Button onClick={generateDetailedReport}>
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Relatório Completo
           </Button>
         </div>
       </div>
@@ -98,13 +340,13 @@ export const AdminReports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total de Usuários</p>
-                <p className="text-2xl font-bold text-blue-600">{totalUsers}</p>
+                <p className="text-2xl font-bold text-blue-600">{metrics.totalUsers}</p>
               </div>
               <Users className="w-8 h-8 text-blue-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+18% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.users}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -114,13 +356,13 @@ export const AdminReports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Receita Total</p>
-                <p className="text-2xl font-bold text-green-600">R$ {totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-600">R$ {metrics.totalRevenue.toLocaleString('pt-BR')}</p>
               </div>
               <DollarSign className="w-8 h-8 text-green-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+24% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.revenue}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -130,13 +372,13 @@ export const AdminReports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total de Leads</p>
-                <p className="text-2xl font-bold text-purple-600">{totalLeads.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-purple-600">{metrics.totalLeads}</p>
               </div>
               <Target className="w-8 h-8 text-purple-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+15% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.leads}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -146,13 +388,13 @@ export const AdminReports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Receita/Usuário</p>
-                <p className="text-2xl font-bold text-orange-600">R$ {avgRevenuePerUser}</p>
+                <p className="text-2xl font-bold text-orange-600">R$ {Math.round(metrics.avgRevenuePerUser).toLocaleString('pt-BR')}</p>
               </div>
               <BarChart3 className="w-8 h-8 text-orange-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+5% vs mês anterior</span>
+              <span className="text-sm text-green-600">+{metrics.growth.avgRevenue}% vs mês anterior</span>
             </div>
           </CardContent>
         </Card>
@@ -232,23 +474,29 @@ export const AdminReports = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {topUsers.map((user, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-600">{user.company}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-green-600">R$ {user.revenue.toLocaleString()}</p>
-                    <p className="text-xs text-gray-500">{user.leads} leads</p>
-                  </div>
+              {topUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Nenhum usuário encontrado</p>
                 </div>
-              ))}
+              ) : (
+                topUsers.map((user, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {user.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                        <p className="text-xs text-gray-600">{user.company}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-green-600">R$ {user.revenue.toLocaleString('pt-BR')}</p>
+                      <p className="text-xs text-gray-500">{user.leads} leads • {user.plan}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
