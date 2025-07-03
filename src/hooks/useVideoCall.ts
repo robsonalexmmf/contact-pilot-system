@@ -16,7 +16,16 @@ export const useVideoCall = () => {
   const [activeCalls, setActiveCalls] = useState<VideoCallSession[]>([]);
 
   const generateRoomId = useCallback(() => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Gera um código de 3 grupos de 4 caracteres separados por hífen (formato Google Meet)
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const generateGroup = () => {
+      let result = '';
+      for (let i = 0; i < 4; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+    return `${generateGroup()}-${generateGroup()}-${generateGroup()}`;
   }, []);
 
   const createVideoCall = useCallback((contact: ChatContact) => {
