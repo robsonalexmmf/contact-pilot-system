@@ -4,21 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   DollarSign, 
-  Plus, 
   Search, 
   Filter,
   TrendingUp,
   TrendingDown,
   Calendar,
   CreditCard,
-  Receipt,
   AlertCircle
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { NewTransactionDialog } from "./NewTransactionDialog";
+import { EditTransactionDialog } from "./EditTransactionDialog";
+import { FinancialReportDialog } from "./FinancialReportDialog";
 
-const mockTransactions = [
+const initialTransactions = [
   {
     id: 1,
     type: "Receita",
@@ -68,23 +70,34 @@ const statusColors: Record<string, string> = {
 };
 
 export const FinancialManager = () => {
-  const [transactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState(initialTransactions);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
 
-  const handleNewTransaction = () => {
-    console.log("Criando nova transação...");
+  const handleCreateTransaction = (newTransaction: any) => {
+    setTransactions(prev => [newTransaction, ...prev]);
   };
 
-  const handleEditTransaction = (transactionId: number) => {
-    console.log(`Editando transação ${transactionId}...`);
+  const handleUpdateTransaction = (updatedTransaction: any) => {
+    if (updatedTransaction.deleted) {
+      setTransactions(prev => prev.filter(t => t.id !== updatedTransaction.id));
+    } else {
+      setTransactions(prev => 
+        prev.map(t => t.id === updatedTransaction.id ? updatedTransaction : t)
+      );
+    }
+    setEditingTransaction(null);
   };
 
-  const handleGenerateReport = () => {
-    console.log("Gerando relatório financeiro...");
+  const handleEditTransaction = (transaction: any) => {
+    setEditingTransaction(transaction);
   };
 
+  // Calculate dynamic totals
   const totalReceita = transactions
-    .filter(t => t.type === "Receita" && t.status === "Confirmado")
+    .filter(t => t.type === "Receita" && (t.status === "Confirmado" || t.status === "Pago"))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalDespesa = Math.abs(transactions
@@ -92,11 +105,19 @@ export const FinancialManager = () => {
     .reduce((sum, t) => sum + t.amount, 0));
 
   const lucroLiquido = totalReceita - totalDespesa;
+  const transacoesPendentes = transactions.filter(t => t.status === "Pendente").length;
 
-  const filteredTransactions = transactions.filter(transaction =>
-    transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.client.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter transactions
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         transaction.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
+    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   return (
     <div className="space-y-6">
@@ -107,14 +128,8 @@ export const FinancialManager = () => {
           <p className="text-gray-600">Controle suas receitas e despesas</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleGenerateReport}>
-            <Receipt className="w-4 h-4 mr-2" />
-            Relatório
-          </Button>
-          <Button onClick={handleNewTransaction} className="bg-gradient-to-r from-blue-600 to-purple-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Transação
-          </Button>
+          <FinancialReportDialog transactions={transactions} />
+          <NewTransactionDialog onCreateTransaction={handleCreateTransaction} />
         </div>
       </div>
 
@@ -173,9 +188,7 @@ export const FinancialManager = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {transactions.filter(t => t.status === "Pendente").length}
-                </p>
+                <p className="text-2xl font-bold text-orange-600">{transacoesPendentes}</p>
                 <div className="flex items-center mt-1">
                   <AlertCircle className="w-4 h-4 text-orange-500 mr-1" />
                   <span className="text-sm text-orange-600">A receber</span>
@@ -216,7 +229,7 @@ export const FinancialManager = () => {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Transações Recentes</CardTitle>
+            <CardTitle>Transações ({filteredTransactions.length})</CardTitle>
             <div className="flex space-x-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -227,60 +240,92 @@ export const FinancialManager = () => {
                   className="pl-10 w-64"
                 />
               </div>
-              <Button variant="outline">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-              </Button>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Confirmado">Confirmado</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Pago">Pago</SelectItem>
+                  <SelectItem value="Atrasado">Atrasado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Receita">Receita</SelectItem>
+                  <SelectItem value="Despesa">Despesa</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
-                <div className="flex items-center space-x-4">
-                  <div className={`p-2 rounded-lg ${transaction.type === 'Receita' ? 'bg-green-100' : 'bg-red-100'}`}>
-                    {transaction.type === 'Receita' ? (
-                      <TrendingUp className={`w-5 h-5 ${transaction.type === 'Receita' ? 'text-green-600' : 'text-red-600'}`} />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 text-red-600" />
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{transaction.description}</h3>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span>{transaction.category}</span>
-                      {transaction.client && (
-                        <>
-                          <span>•</span>
-                          <span>{transaction.client}</span>
-                        </>
+            {filteredTransactions.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">Nenhuma transação encontrada</p>
+            ) : (
+              filteredTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-sm transition-shadow">
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-2 rounded-lg ${transaction.type === 'Receita' ? 'bg-green-100' : 'bg-red-100'}`}>
+                      {transaction.type === 'Receita' ? (
+                        <TrendingUp className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <TrendingDown className="w-5 h-5 text-red-600" />
                       )}
-                      <span>•</span>
-                      <span>{new Date(transaction.date).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{transaction.description}</h3>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <span>{transaction.category}</span>
+                        {transaction.client && (
+                          <>
+                            <span>•</span>
+                            <span>{transaction.client}</span>
+                          </>
+                        )}
+                        <span>•</span>
+                        <span>{new Date(transaction.date).toLocaleDateString('pt-BR')}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className={`text-lg font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString()}
-                    </p>
-                    <Badge className={statusColors[transaction.status]}>
-                      {transaction.status}
-                    </Badge>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString()}
+                      </p>
+                      <Badge className={statusColors[transaction.status]}>
+                        {transaction.status}
+                      </Badge>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => handleEditTransaction(transaction)}>
+                      Editar
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => handleEditTransaction(transaction.id)}>
-                    Editar
-                  </Button>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Transaction Dialog */}
+      {editingTransaction && (
+        <EditTransactionDialog
+          isOpen={!!editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          transaction={editingTransaction}
+          onUpdateTransaction={handleUpdateTransaction}
+        />
+      )}
     </div>
   );
 };
