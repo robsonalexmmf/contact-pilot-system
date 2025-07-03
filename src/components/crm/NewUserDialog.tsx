@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewUserDialogProps {
   open: boolean;
@@ -21,9 +22,10 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
     plan: "Free",
     status: "Ativo"
   });
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.whatsapp) {
@@ -35,31 +37,79 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
       return;
     }
 
-    const newUser = {
-      id: Date.now(),
-      ...formData,
-      lastLogin: new Date().toLocaleString('pt-BR'),
-      totalLeads: 0,
-      monthlyRevenue: 0,
-      joinDate: new Date().toLocaleDateString('pt-BR')
-    };
+    setLoading(true);
 
-    onUserCreated(newUser);
-    
-    toast({
-      title: "Sucesso",
-      description: "Usuário criado com sucesso!"
-    });
+    try {
+      // Criar usuário na autenticação
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: 'temppassword123', // Senha temporária
+        options: {
+          data: {
+            name: formData.name
+          }
+        }
+      });
 
-    setFormData({
-      name: "",
-      email: "",
-      whatsapp: "",
-      plan: "Free",
-      status: "Ativo"
-    });
-    
-    onOpenChange(false);
+      if (authError) {
+        toast({
+          title: "Erro",
+          description: authError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Atualizar perfil com dados adicionais
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            whatsapp: formData.whatsapp,
+            plan: formData.plan,
+            status: formData.status
+          })
+          .eq('id', authData.user.id);
+
+        if (profileError) {
+          console.error('Erro ao atualizar perfil:', profileError);
+        }
+      }
+
+      const newUser = {
+        id: authData.user?.id,
+        ...formData,
+        lastLogin: new Date().toLocaleString('pt-BR'),
+        totalLeads: 0,
+        monthlyRevenue: 0,
+        joinDate: new Date().toLocaleDateString('pt-BR')
+      };
+
+      onUserCreated(newUser);
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário criado com sucesso!"
+      });
+
+      setFormData({
+        name: "",
+        email: "",
+        whatsapp: "",
+        plan: "Free",
+        status: "Ativo"
+      });
+      
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar usuário: " + error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,6 +126,7 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Nome completo"
+              disabled={loading}
             />
           </div>
           
@@ -87,6 +138,7 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="email@exemplo.com"
+              disabled={loading}
             />
           </div>
           
@@ -97,12 +149,13 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
               value={formData.whatsapp}
               onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
               placeholder="+55 11 99999-9999"
+              disabled={loading}
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="plan">Plano</Label>
-            <Select value={formData.plan} onValueChange={(value) => setFormData(prev => ({ ...prev, plan: value }))}>
+            <Select value={formData.plan} onValueChange={(value) => setFormData(prev => ({ ...prev, plan: value }))} disabled={loading}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -116,7 +169,7 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
           
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))} disabled={loading}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -128,11 +181,11 @@ export const NewUserDialog = ({ open, onOpenChange, onUserCreated }: NewUserDial
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Criar Usuário
+            <Button type="submit" disabled={loading}>
+              {loading ? "Criando..." : "Criar Usuário"}
             </Button>
           </div>
         </form>

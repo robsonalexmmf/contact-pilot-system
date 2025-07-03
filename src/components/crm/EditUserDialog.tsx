@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EditUserDialogProps {
   open: boolean;
@@ -22,9 +23,10 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
     plan: user?.plan || "Free",
     status: user?.status || "Ativo"
   });
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.whatsapp) {
@@ -36,19 +38,52 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
       return;
     }
 
-    const updatedUser = {
-      ...user,
-      ...formData
-    };
+    setLoading(true);
 
-    onUserUpdated(updatedUser);
-    
-    toast({
-      title: "Sucesso",
-      description: "Usuário atualizado com sucesso!"
-    });
-    
-    onOpenChange(false);
+    try {
+      // Atualizar perfil no Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: formData.name,
+          email: formData.email,
+          whatsapp: formData.whatsapp,
+          plan: formData.plan,
+          status: formData.status
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const updatedUser = {
+        ...user,
+        ...formData
+      };
+
+      onUserUpdated(updatedUser);
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário atualizado com sucesso!"
+      });
+      
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar usuário: " + error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!user) return null;
@@ -67,6 +102,7 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Nome completo"
+              disabled={loading}
             />
           </div>
           
@@ -78,6 +114,7 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
               value={formData.email}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               placeholder="email@exemplo.com"
+              disabled={loading}
             />
           </div>
           
@@ -88,12 +125,13 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
               value={formData.whatsapp}
               onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
               placeholder="+55 11 99999-9999"
+              disabled={loading}
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="plan">Plano</Label>
-            <Select value={formData.plan} onValueChange={(value) => setFormData(prev => ({ ...prev, plan: value }))}>
+            <Select value={formData.plan} onValueChange={(value) => setFormData(prev => ({ ...prev, plan: value }))} disabled={loading}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -107,7 +145,7 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
           
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))} disabled={loading}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -119,11 +157,11 @@ export const EditUserDialog = ({ open, onOpenChange, user, onUserUpdated }: Edit
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Salvar Alterações
+            <Button type="submit" disabled={loading}>
+              {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </form>
