@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { 
   ContextMenu, 
   ContextMenuContent, 
@@ -56,8 +55,6 @@ export const LeadActionsMenu = ({
   onConvertToCustomer,
   onMarkAsFavorite
 }: LeadActionsMenuProps) => {
-  const [open, setOpen] = useState(false);
-
   const handleAction = (action: string) => {
     console.log(`Ação '${action}' executada para lead:`, lead.name);
     
@@ -89,12 +86,10 @@ export const LeadActionsMenu = ({
         onMarkAsFavorite(lead.id);
         break;
     }
-    
-    setOpen(false);
   };
 
   return (
-    <ContextMenu open={open} onOpenChange={setOpen}>
+    <ContextMenu>
       <ContextMenuTrigger asChild>
         <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
           <MoreHorizontal className="w-4 h-4" />
