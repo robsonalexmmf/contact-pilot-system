@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import {
   Target
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Pie } from 'recharts';
 
 const monthlyData = [
   { month: 'Jan', users: 120, revenue: 45000, leads: 350 },
@@ -193,12 +192,18 @@ export const AdminReports = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <RechartsPieChart>
-                <Tooltip />
-                <RechartsPieChart data={planDistribution} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value">
+                <Pie
+                  data={planDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  dataKey="value"
+                >
                   {planDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                </RechartsPieChart>
+                </Pie>
+                <Tooltip />
               </RechartsPieChart>
             </ResponsiveContainer>
             <div className="flex justify-center space-x-4 mt-4">
