@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Target, TrendingUp, Shield, Check, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { SubscriptionButton } from "@/components/mercadopago/SubscriptionButton";
 
 export default function Landing() {
   return (
@@ -157,9 +158,9 @@ export default function Landing() {
               </li>
             </ul>
             
-            <Link to="/auth" className="w-full">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700">Assinar Pro</Button>
-            </Link>
+            <SubscriptionButton planType="pro" className="w-full bg-blue-600 hover:bg-blue-700">
+              Assinar Pro
+            </SubscriptionButton>
           </div>
 
           {/* Plano Premium */}
@@ -201,9 +202,9 @@ export default function Landing() {
               </li>
             </ul>
             
-            <Link to="/auth" className="w-full">
-              <Button className="w-full bg-purple-600 hover:bg-purple-700">Assinar Premium</Button>
-            </Link>
+            <SubscriptionButton planType="premium" className="w-full bg-purple-600 hover:bg-purple-700">
+              Assinar Premium
+            </SubscriptionButton>
           </div>
         </div>
       </section>
