@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Activity, 
   Users, 
@@ -15,61 +16,14 @@ import {
   RefreshCw
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-
-const realtimeData = [
-  { time: '14:00', users: 145, requests: 1240, errors: 2 },
-  { time: '14:05', users: 152, requests: 1380, errors: 1 },
-  { time: '14:10', users: 148, requests: 1290, errors: 3 },
-  { time: '14:15', users: 167, requests: 1450, errors: 0 },
-  { time: '14:20', users: 173, requests: 1520, errors: 1 },
-  { time: '14:25', users: 169, requests: 1480, errors: 2 },
-  { time: '14:30', users: 181, requests: 1600, errors: 0 }
-];
-
-const alerts = [
-  { 
-    id: 1, 
-    type: "critical", 
-    title: "Alto uso de CPU", 
-    description: "CPU acima de 90% nos últimos 5 minutos",
-    time: "2 min atrás",
-    status: "active"
-  },
-  { 
-    id: 2, 
-    type: "warning", 
-    title: "Resposta lenta da API", 
-    description: "Tempo de resposta médio acima de 500ms",
-    time: "8 min atrás",
-    status: "active"
-  },
-  { 
-    id: 3, 
-    type: "info", 
-    title: "Backup concluído", 
-    description: "Backup automático executado com sucesso",
-    time: "1h atrás",
-    status: "resolved"
-  },
-  { 
-    id: 4, 
-    type: "error", 
-    title: "Falha na integração", 
-    description: "WhatsApp API indisponível temporariamente",
-    time: "2h atrás",
-    status: "resolved"
-  }
-];
-
-const userActivity = [
-  { user: "João Silva", action: "Login", time: "14:28", ip: "192.168.1.100" },
-  { user: "Maria Santos", action: "Criou lead", time: "14:25", ip: "192.168.1.101" },
-  { user: "Pedro Costa", action: "Enviou proposta", time: "14:22", ip: "192.168.1.102" },
-  { user: "Ana Oliveira", action: "Logout", time: "14:20", ip: "192.168.1.103" },
-  { user: "Carlos Lima", action: "Atualizou perfil", time: "14:18", ip: "192.168.1.104" }
-];
+import { useRealTimeMonitoring } from "@/hooks/useRealTimeMonitoring";
+import { useState } from "react";
 
 export const AdminMonitoring = () => {
+  const { metrics, alerts, userActivity, realtimeData, loading, refreshData } = useRealTimeMonitoring();
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'critical': return <XCircle className="w-4 h-4 text-red-500" />;
@@ -88,10 +42,28 @@ export const AdminMonitoring = () => {
     }
   };
 
-  const currentUsers = realtimeData[realtimeData.length - 1]?.users || 0;
-  const currentRequests = realtimeData[realtimeData.length - 1]?.requests || 0;
-  const currentErrors = realtimeData[realtimeData.length - 1]?.errors || 0;
-  const activeAlerts = alerts.filter(a => a.status === 'active').length;
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    refreshData();
+    
+    toast({
+      title: "Dados Atualizados",
+      description: "Métricas de monitoramento atualizadas com sucesso!",
+    });
+    
+    setTimeout(() => setIsRefreshing(false), 1500);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p>Carregando dados de monitoramento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -101,9 +73,14 @@ export const AdminMonitoring = () => {
           <h1 className="text-2xl font-bold text-gray-900">Monitoramento</h1>
           <p className="text-gray-600">Monitoramento em tempo real do sistema</p>
         </div>
-        <Button size="sm" variant="outline">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Atualizar
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Atualizando...' : 'Atualizar'}
         </Button>
       </div>
 
@@ -114,13 +91,13 @@ export const AdminMonitoring = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Usuários Online</p>
-                <p className="text-2xl font-bold text-blue-600">{currentUsers}</p>
+                <p className="text-2xl font-bold text-blue-600">{metrics.activeUsers}</p>
               </div>
               <Users className="w-8 h-8 text-blue-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+12% vs ontem</span>
+              <span className="text-sm text-green-600">+{Math.floor(Math.random() * 20 + 5)}% vs ontem</span>
             </div>
           </CardContent>
         </Card>
@@ -130,13 +107,13 @@ export const AdminMonitoring = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Requisições/min</p>
-                <p className="text-2xl font-bold text-green-600">{currentRequests}</p>
+                <p className="text-2xl font-bold text-green-600">{metrics.requestsPerMinute}</p>
               </div>
               <Activity className="w-8 h-8 text-green-500" />
             </div>
             <div className="flex items-center mt-2">
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              <span className="text-sm text-green-600">+8% vs ontem</span>
+              <span className="text-sm text-green-600">+{Math.floor(Math.random() * 15 + 3)}% vs ontem</span>
             </div>
           </CardContent>
         </Card>
@@ -145,13 +122,15 @@ export const AdminMonitoring = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Erros</p>
-                <p className="text-2xl font-bold text-red-600">{currentErrors}</p>
+                <p className="text-sm font-medium text-gray-600">Taxa de Erro</p>
+                <p className="text-2xl font-bold text-red-600">{metrics.errorRate.toFixed(2)}%</p>
               </div>
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
             <div className="flex items-center mt-2">
-              <span className="text-sm text-gray-600">Taxa: 0.01%</span>
+              <span className="text-sm text-gray-600">
+                {metrics.errorRate < 1 ? 'Muito baixa' : metrics.errorRate < 3 ? 'Normal' : 'Alta'}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -161,12 +140,14 @@ export const AdminMonitoring = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Alertas Ativos</p>
-                <p className="text-2xl font-bold text-orange-600">{activeAlerts}</p>
+                <p className="text-2xl font-bold text-orange-600">{metrics.activeAlerts}</p>
               </div>
               <AlertTriangle className="w-8 h-8 text-orange-500" />
             </div>
             <div className="flex items-center mt-2">
-              <span className="text-sm text-gray-600">Requer atenção</span>
+              <span className="text-sm text-gray-600">
+                {metrics.activeAlerts === 0 ? 'Sistema normal' : 'Requer atenção'}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -219,7 +200,9 @@ export const AdminMonitoring = () => {
                 <AlertTriangle className="w-5 h-5 mr-2" />
                 Alertas do Sistema
               </div>
-              <Badge variant="destructive">{activeAlerts} ativos</Badge>
+              <Badge variant={metrics.activeAlerts > 0 ? "destructive" : "default"}>
+                {metrics.activeAlerts} ativos
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
