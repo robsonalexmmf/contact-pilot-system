@@ -23,6 +23,15 @@ import {
   Download,
   Ban
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface SecurityEvent {
   id: string;
@@ -96,6 +105,21 @@ export const AdminSecurity = () => {
   const [loading, setLoading] = useState(false);
   const [newIPtoBlock, setNewIPtoBlock] = useState("");
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
+  const [showAdvancedDialog, setShowAdvancedDialog] = useState(false);
+  const [advancedSettings, setAdvancedSettings] = useState({
+    sessionTimeout: 30,
+    maxLoginAttempts: 5,
+    passwordMinLength: 8,
+    requireSpecialChars: true,
+    autoBlockSuspiciousIPs: true,
+    logRetentionDays: 90,
+    emailNotifications: true,
+    smsNotifications: false,
+    webhookUrl: "",
+    allowedCountries: ["BR", "US", "CA"],
+    maintenanceMode: false
+  });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const performRealSecurityAudit = async (): Promise<AuditResult> => {
     try {
@@ -444,18 +468,11 @@ export const AdminSecurity = () => {
           : setting
       )
     );
-
-    // Salvar configurações no localStorage
-    const updatedSettings = settings.map(setting => 
-      setting.key === key 
-        ? { ...setting, enabled: !setting.enabled }
-        : setting
-    );
-    localStorage.setItem('security_settings', JSON.stringify(updatedSettings));
+    setHasUnsavedChanges(true);
 
     toast({
-      title: "Configuração Atualizada",
-      description: `${settings.find(s => s.key === key)?.label} ${settings.find(s => s.key === key)?.enabled ? 'desativada' : 'ativada'}`,
+      title: "Configuração Alterada",
+      description: `${settings.find(s => s.key === key)?.label} ${settings.find(s => s.key === key)?.enabled ? 'desativada' : 'ativada'}. Clique em "Salvar Alterações" para confirmar.`,
     });
   };
 
@@ -618,6 +635,74 @@ export const AdminSecurity = () => {
     }
   };
 
+  const handleSaveChanges = async () => {
+    setLoading(true);
+    
+    try {
+      // Salvar configurações no localStorage (em produção seria no backend)
+      const configToSave = {
+        settings: settings,
+        advancedSettings: advancedSettings,
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem('security_settings', JSON.stringify(configToSave));
+      
+      // Simular salvamento no backend
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setHasUnsavedChanges(false);
+      
+      toast({
+        title: "Configurações Salvas",
+        description: "Todas as configurações de segurança foram salvas com sucesso.",
+      });
+
+      // Log da ação
+      console.log('Configurações de segurança salvas:', {
+        enabledSettings: settings.filter(s => s.enabled).length,
+        totalSettings: settings.length,
+        advancedSettings: advancedSettings,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast({
+        title: "Erro ao Salvar",
+        description: "Falha ao salvar as configurações de segurança.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdvancedSettingChange = (key: string, value: any) => {
+    setAdvancedSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleOpenAdvancedSettings = () => {
+    setShowAdvancedDialog(true);
+    
+    // Carregar configurações avançadas salvas
+    const saved = localStorage.getItem('security_settings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.advancedSettings) {
+          setAdvancedSettings(parsed.advancedSettings);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações avançadas:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     generateSecurityEvents();
     
@@ -626,7 +711,12 @@ export const AdminSecurity = () => {
     if (savedSettings) {
       try {
         const parsedSettings = JSON.parse(savedSettings);
-        setSettings(parsedSettings);
+        if (parsedSettings.settings) {
+          setSettings(parsedSettings.settings);
+        }
+        if (parsedSettings.advancedSettings) {
+          setAdvancedSettings(parsedSettings.advancedSettings);
+        }
       } catch (error) {
         console.error('Erro ao carregar configurações:', error);
       }
@@ -676,6 +766,27 @@ export const AdminSecurity = () => {
           </Button>
         </div>
       </div>
+
+      {/* Unsaved Changes Warning */}
+      {hasUnsavedChanges && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
+                <span className="text-yellow-800 font-medium">Você tem alterações não salvas</span>
+              </div>
+              <Button 
+                onClick={handleSaveChanges}
+                disabled={loading}
+                className="bg-yellow-600 hover:bg-yellow-700"
+              >
+                {loading ? 'Salvando...' : 'Salvar Agora'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Security Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -921,11 +1032,164 @@ export const AdminSecurity = () => {
             </div>
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex justify-between">
-                <Button variant="outline" className="flex-1 mr-2">
-                  Configurações Avançadas
-                </Button>
-                <Button className="flex-1 ml-2">
-                  Salvar Alterações
+                <Dialog open={showAdvancedDialog} onOpenChange={setShowAdvancedDialog}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 mr-2"
+                      onClick={handleOpenAdvancedSettings}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configurações Avançadas
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Configurações Avançadas de Segurança</DialogTitle>
+                      <DialogDescription>
+                        Configure opções avançadas de segurança e monitoramento
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="grid gap-6 py-4">
+                      <div className="grid gap-4">
+                        <h4 className="font-semibold">Autenticação</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Timeout de Sessão (min)</label>
+                            <Input
+                              type="number"
+                              value={advancedSettings.sessionTimeout}
+                              onChange={(e) => handleAdvancedSettingChange('sessionTimeout', parseInt(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Max Tentativas de Login</label>
+                            <Input
+                              type="number"
+                              value={advancedSettings.maxLoginAttempts}
+                              onChange={(e) => handleAdvancedSettingChange('maxLoginAttempts', parseInt(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4">
+                        <h4 className="font-semibold">Políticas de Senha</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Comprimento Mínimo</label>
+                            <Input
+                              type="number"
+                              value={advancedSettings.passwordMinLength}
+                              onChange={(e) => handleAdvancedSettingChange('passwordMinLength', parseInt(e.target.value))}
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={advancedSettings.requireSpecialChars}
+                              onCheckedChange={(checked) => handleAdvancedSettingChange('requireSpecialChars', checked)}
+                            />
+                            <label className="text-sm font-medium">Caracteres Especiais</label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4">
+                        <h4 className="font-semibold">Monitoramento</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={advancedSettings.autoBlockSuspiciousIPs}
+                              onCheckedChange={(checked) => handleAdvancedSettingChange('autoBlockSuspiciousIPs', checked)}
+                            />
+                            <label className="text-sm font-medium">Auto-bloquear IPs Suspeitos</label>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Retenção de Logs (dias)</label>
+                            <Input
+                              type="number"
+                              value={advancedSettings.logRetentionDays}
+                              onChange={(e) => handleAdvancedSettingChange('logRetentionDays', parseInt(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4">
+                        <h4 className="font-semibold">Notificações</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={advancedSettings.emailNotifications}
+                              onCheckedChange={(checked) => handleAdvancedSettingChange('emailNotifications', checked)}
+                            />
+                            <label className="text-sm font-medium">Notificações por Email</label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={advancedSettings.smsNotifications}
+                              onCheckedChange={(checked) => handleAdvancedSettingChange('smsNotifications', checked)}
+                            />
+                            <label className="text-sm font-medium">Notificações por SMS</label>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Webhook URL</label>
+                            <Input
+                              value={advancedSettings.webhookUrl}
+                              onChange={(e) => handleAdvancedSettingChange('webhookUrl', e.target.value)}
+                              placeholder="https://sua-api.com/webhook"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4">
+                        <h4 className="font-semibold">Sistema</h4>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={advancedSettings.maintenanceMode}
+                            onCheckedChange={(checked) => handleAdvancedSettingChange('maintenanceMode', checked)}
+                          />
+                          <label className="text-sm font-medium">Modo Manutenção</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAdvancedDialog(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={() => {
+                        setShowAdvancedDialog(false);
+                        toast({
+                          title: "Configurações Aplicadas",
+                          description: "Configurações avançadas foram aplicadas. Clique em 'Salvar Alterações' para confirmar.",
+                        });
+                      }}>
+                        Aplicar
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button 
+                  className={`flex-1 ml-2 ${hasUnsavedChanges ? 'bg-green-600 hover:bg-green-700 animate-pulse' : ''}`}
+                  onClick={handleSaveChanges}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Salvar Alterações
+                      {hasUnsavedChanges && <span className="ml-1">*</span>}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
