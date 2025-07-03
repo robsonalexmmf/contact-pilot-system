@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { IntegrationConfigDialog } from "./IntegrationConfigDialog";
 import { 
   Settings as SettingsIcon, 
   Users, 
@@ -80,6 +80,7 @@ const initialTeamMembers: TeamMember[] = [
 
 export const Settings = () => {
   const { toast } = useToast();
+  const [integrationDialogOpen, setIntegrationDialogOpen] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [editingMember, setEditingMember] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<TeamMember>>({});
@@ -256,24 +257,9 @@ export const Settings = () => {
     }
   };
 
-  const handleConfigureIntegrations = () => {
-    // Abrir modal ou página de integrações
-    const integrations = [
-      "WhatsApp Business API",
-      "Email Marketing",
-      "Google Calendar",
-      "Slack",
-      "Zapier"
-    ];
-    
-    const availableIntegrations = integrations.join(", ");
-    
-    toast({
-      title: "Integrações Disponíveis",
-      description: `Configure: ${availableIntegrations}`,
-    });
-    
-    console.log("Integrações disponíveis:", integrations);
+  const handleConfigureIntegractions = () => {
+    setIntegrationDialogOpen(true);
+    console.log("Abrindo configurações de integrações");
   };
 
   const handleSecurityLogs = () => {
@@ -588,7 +574,7 @@ export const Settings = () => {
             <Button 
               variant="outline" 
               className="w-full justify-start" 
-              onClick={handleConfigureIntegrations}
+              onClick={handleConfigureIntegractions}
             >
               <Zap className="w-4 h-4 mr-2" />
               Configurar Integrações
@@ -832,6 +818,12 @@ export const Settings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Integration Configuration Dialog */}
+      <IntegrationConfigDialog 
+        open={integrationDialogOpen}
+        onClose={() => setIntegrationDialogOpen(false)}
+      />
     </div>
   );
 };
