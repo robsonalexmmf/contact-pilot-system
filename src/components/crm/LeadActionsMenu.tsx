@@ -18,6 +18,7 @@ import {
   Star
 } from "lucide-react";
 import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
+import { openEmailClient, emailTemplates } from "@/utils/emailUtils";
 
 interface Lead {
   id: number;
@@ -73,7 +74,9 @@ export const LeadActionsMenu = ({
         openWhatsApp(lead.phone, message);
         break;
       case 'email':
-        onEmail(lead.id);
+        // Use a função de email diretamente
+        const template = emailTemplates.leadContact(lead.name, lead.company);
+        openEmailClient(lead.email, template.subject, template.body);
         break;
       case 'meeting':
         onScheduleMeeting(lead.id);

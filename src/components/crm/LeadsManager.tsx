@@ -17,6 +17,8 @@ import {
 import { NewLeadDialog } from "./NewLeadDialog";
 import { LeadActionsMenu } from "./LeadActionsMenu";
 import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
+import { ScheduleMeetingDialog } from "./ScheduleMeetingDialog";
+import { openEmailClient, emailTemplates } from "@/utils/emailUtils";
 
 const mockLeads = [
   {
@@ -94,17 +96,20 @@ export const LeadsManager = () => {
   const handleEmailLead = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
     if (lead?.email) {
-      const emailUrl = `mailto:${lead.email}?subject=Contato via Salesin Pro&body=Olá ${lead.name}, entrando em contato.`;
-      window.open(emailUrl, '_blank');
+      const template = emailTemplates.leadContact(lead.name, lead.company);
+      openEmailClient(lead.email, template.subject, template.body);
       console.log(`Abrindo email para ${lead.name} - ${lead.email}`);
     }
   };
 
   const handleScheduleMeeting = (leadId: number) => {
     const lead = leads.find(l => l.id === leadId);
-    console.log(`Agendando reunião com ${lead?.name}`);
-    // Aqui você integraria com sistema de agenda
-    alert(`Funcionalidade de agendamento será implementada para ${lead?.name}`);
+    console.log(`Abrindo dialog de agendamento para ${lead?.name}`);
+  };
+
+  const handleMeetingScheduled = (meetingData: any) => {
+    console.log("Reunião agendada com sucesso:", meetingData);
+    alert(`Reunião agendada com ${meetingData.leadName} para ${meetingData.date.toLocaleDateString('pt-BR')} às ${meetingData.time}`);
   };
 
   const handleCreateProposal = (leadId: number) => {
@@ -288,15 +293,20 @@ export const LeadsManager = () => {
                 >
                   <Mail className="w-4 h-4" />
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => handleScheduleMeeting(lead.id)}
-                  className="flex-1 hover:bg-purple-50"
-                  title="Agendar Reunião"
-                >
-                  <Calendar className="w-4 h-4" />
-                </Button>
+                <ScheduleMeetingDialog
+                  lead={lead}
+                  onSchedule={handleMeetingScheduled}
+                  trigger={
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1 hover:bg-purple-50"
+                      title="Agendar Reunião"
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </Button>
+                  }
+                />
               </div>
             </CardContent>
           </Card>
