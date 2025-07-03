@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
+import { SupportedLanguage } from "@/utils/translations";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -90,11 +91,6 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     applyTheme(settings.appearance.theme);
   }, [settings.appearance.theme]);
 
-  // Aplicar idioma quando mudança for detectada
-  useEffect(() => {
-    setLanguage(settings.appearance.language as any);
-  }, [settings.appearance.language, setLanguage]);
-
   const applyTheme = (theme: string) => {
     const root = document.documentElement;
     
@@ -135,6 +131,11 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     }));
     setHasChanges(true);
     console.log(`Aparência ${key} alterada para:`, value);
+    
+    // Apply language change immediately
+    if (key === 'language') {
+      setLanguage(value as SupportedLanguage);
+    }
   };
 
   const handlePrivacyChange = (key: keyof SettingsState['privacy'], value: boolean) => {
@@ -150,6 +151,9 @@ export const SettingsDialog = ({ open, onClose }: SettingsDialogProps) => {
     try {
       // Salvar no localStorage
       localStorage.setItem('userSettings', JSON.stringify(settings));
+      
+      // Apply language immediately after saving
+      setLanguage(settings.appearance.language as SupportedLanguage);
       
       // Simular salvamento no servidor
       await new Promise(resolve => setTimeout(resolve, 500));
