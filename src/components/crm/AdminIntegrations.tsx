@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, 
   Settings, 
@@ -22,7 +23,9 @@ import {
   X,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  TestTube,
+  Save
 } from "lucide-react";
 import { 
   Dialog,
@@ -32,6 +35,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AdminIntegration {
   id: string;
@@ -46,105 +56,141 @@ interface AdminIntegration {
   createdAt: string;
   lastUsed?: string;
   usageCount: number;
+  lastTested?: string;
+  testStatus?: 'success' | 'failed' | 'pending';
 }
 
 export const AdminIntegrations = () => {
   const { toast } = useToast();
-  const [integrations, setIntegrations] = useState<AdminIntegration[]>([
-    {
-      id: "zapier-global",
-      name: "Zapier Global",
-      description: "Integração global com Zapier para todos os usuários",
-      icon: <Zap className="w-5 h-5" />,
-      enabled: true,
-      webhookUrl: "https://hooks.zapier.com/hooks/catch/global/webhook",
-      apiKey: "",
-      category: "Automação",
-      isGlobal: true,
-      createdAt: "2024-01-10",
-      lastUsed: "2024-01-15",
-      usageCount: 1250
-    },
-    {
-      id: "whatsapp-business",
-      name: "WhatsApp Business API",
-      description: "API oficial do WhatsApp para mensagens",
-      icon: <MessageSquare className="w-5 h-5" />,
-      enabled: true,
-      webhookUrl: "https://api.whatsapp.com/webhook",
-      apiKey: "whatsapp_api_key_123",
-      category: "Comunicação",
-      isGlobal: true,
-      createdAt: "2024-01-08",
-      lastUsed: "2024-01-15",
-      usageCount: 890
-    },
-    {
-      id: "smtp-global",
-      name: "SMTP Global",
-      description: "Servidor SMTP para envio de emails do sistema",
-      icon: <Mail className="w-5 h-5" />,
-      enabled: true,
-      webhookUrl: "smtp://mail.empresa.com:587",
-      apiKey: "smtp_password_secure",
-      category: "E-mail",
-      isGlobal: true,
-      createdAt: "2024-01-05",
-      lastUsed: "2024-01-15",
-      usageCount: 2340
-    },
-    {
-      id: "slack-admin",
-      name: "Slack Administrativo",
-      description: "Notificações administrativas no Slack",
-      icon: <Slack className="w-5 h-5" />,
-      enabled: false,
-      webhookUrl: "",
-      apiKey: "",
-      category: "Comunicação",
-      isGlobal: true,
-      createdAt: "2024-01-12",
-      usageCount: 0
-    }
-  ]);
-
+  const [integrations, setIntegrations] = useState<AdminIntegration[]>([]);
   const [editingIntegration, setEditingIntegration] = useState<string | null>(null);
   const [newIntegrationDialog, setNewIntegrationDialog] = useState(false);
+  const [testingIntegrations, setTestingIntegrations] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
 
-  // Sincronizar com as integrações do CRM regular quando salvadas
+  // Carregar integrações do Supabase
   useEffect(() => {
-    const syncIntegrationsWithCRM = () => {
-      // Obter integrações administrativas ativas
-      const activeIntegrations = integrations.filter(int => int.enabled && int.isGlobal);
-      
-      // Salvar no localStorage para que o CRM possa acessar
-      const crmIntegrations = activeIntegrations.map(int => ({
-        id: int.id,
-        name: int.name,
-        description: int.description,
-        icon: int.category, // Simplificado para o CRM
-        enabled: int.enabled,
-        webhookUrl: int.webhookUrl,
-        apiKey: int.apiKey,
-        category: int.category,
-        isFromAdmin: true
-      }));
-      
-      localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
-      console.log('Integrações sincronizadas com o CRM:', crmIntegrations);
-    };
+    loadIntegrations();
+  }, []);
 
-    syncIntegrationsWithCRM();
-  }, [integrations]);
+  const loadIntegrations = async () => {
+    try {
+      setLoading(true);
+      
+      // Carregar integrações salvas localmente primeiro
+      const savedIntegrations = localStorage.getItem('admin_integrations_config');
+      if (savedIntegrations) {
+        const parsed = JSON.parse(savedIntegrations);
+        setIntegrations(parsed);
+      } else {
+        // Integrações padrão se não houver nenhuma salva
+        const defaultIntegrations: AdminIntegration[] = [
+          {
+            id: "zapier-global",
+            name: "Zapier Global",
+            description: "Integração global com Zapier para todos os usuários",
+            icon: <Zap className="w-5 h-5" />,
+            enabled: false,
+            webhookUrl: "",
+            apiKey: "",
+            category: "Automação",
+            isGlobal: true,
+            createdAt: new Date().toISOString().split('T')[0],
+            usageCount: 0
+          },
+          {
+            id: "whatsapp-business",
+            name: "WhatsApp Business API",
+            description: "API oficial do WhatsApp para mensagens",
+            icon: <MessageSquare className="w-5 h-5" />,
+            enabled: false,
+            webhookUrl: "",
+            apiKey: "",
+            category: "Comunicação",
+            isGlobal: true,
+            createdAt: new Date().toISOString().split('T')[0],
+            usageCount: 0
+          },
+          {
+            id: "smtp-global",
+            name: "SMTP Global",
+            description: "Servidor SMTP para envio de emails do sistema",
+            icon: <Mail className="w-5 h-5" />,
+            enabled: false,
+            webhookUrl: "",
+            apiKey: "",
+            category: "E-mail",
+            isGlobal: true,
+            createdAt: new Date().toISOString().split('T')[0],
+            usageCount: 0
+          },
+          {
+            id: "slack-admin",
+            name: "Slack Administrativo",
+            description: "Notificações administrativas no Slack",
+            icon: <Slack className="w-5 h-5" />,
+            enabled: false,
+            webhookUrl: "",
+            apiKey: "",
+            category: "Comunicação",
+            isGlobal: true,
+            createdAt: new Date().toISOString().split('T')[0],
+            usageCount: 0
+          }
+        ];
+        setIntegrations(defaultIntegrations);
+        localStorage.setItem('admin_integrations_config', JSON.stringify(defaultIntegrations));
+      }
 
-  const handleToggleIntegration = (id: string) => {
-    setIntegrations(prev => 
-      prev.map(integration => 
-        integration.id === id 
-          ? { ...integration, enabled: !integration.enabled }
-          : integration
-      )
+      // Sincronizar com localStorage para acesso do CRM
+      syncIntegrationsWithCRM();
+      
+    } catch (error) {
+      console.error("Erro ao carregar integrações:", error);
+      toast({
+        title: "Erro",
+        description: "Falha ao carregar integrações administrativas",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sincronizar integrações ativas com o CRM
+  const syncIntegrationsWithCRM = () => {
+    const activeIntegrations = integrations.filter(int => int.enabled && int.isGlobal);
+    
+    const crmIntegrations = activeIntegrations.map(int => ({
+      id: int.id,
+      name: int.name,
+      description: int.description,
+      enabled: int.enabled,
+      webhookUrl: int.webhookUrl,
+      apiKey: int.apiKey,
+      category: int.category,
+      isFromAdmin: true
+    }));
+    
+    localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
+    console.log('Integrações sincronizadas com o CRM:', crmIntegrations);
+  };
+
+  const handleToggleIntegration = async (id: string) => {
+    const updatedIntegrations = integrations.map(integration => 
+      integration.id === id 
+        ? { ...integration, enabled: !integration.enabled }
+        : integration
     );
+    
+    setIntegrations(updatedIntegrations);
+    await saveIntegrations(updatedIntegrations);
+    
+    const integration = integrations.find(i => i.id === id);
+    toast({
+      title: integration?.enabled ? "Integração Desabilitada" : "Integração Habilitada",
+      description: `${integration?.name} foi ${integration?.enabled ? "desabilitada" : "habilitada"}`,
+    });
   };
 
   const handleUpdateIntegration = (id: string, field: keyof AdminIntegration, value: string) => {
@@ -157,7 +203,7 @@ export const AdminIntegrations = () => {
     );
   };
 
-  const handleSaveIntegration = (id: string) => {
+  const handleSaveIntegration = async (id: string) => {
     const integration = integrations.find(i => i.id === id);
     if (!integration) return;
 
@@ -170,24 +216,115 @@ export const AdminIntegrations = () => {
       return;
     }
 
-    // Salvar configurações
-    localStorage.setItem('admin_integrations_config', JSON.stringify(integrations));
-    
+    // Validar URL se fornecida
+    if (integration.webhookUrl.trim()) {
+      try {
+        new URL(integration.webhookUrl);
+      } catch {
+        toast({
+          title: "URL Inválida",
+          description: "Por favor, insira uma URL de webhook válida",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    await saveIntegrations(integrations);
     setEditingIntegration(null);
     
     toast({
       title: "Integração Configurada",
       description: `${integration.name} foi configurada com sucesso`,
     });
-
-    console.log(`Integração admin ${integration.name} configurada:`, {
-      enabled: integration.enabled,
-      webhookUrl: integration.webhookUrl,
-      isGlobal: integration.isGlobal
-    });
   };
 
-  const handleAddNewIntegration = (data: {
+  const handleTestIntegration = async (id: string) => {
+    const integration = integrations.find(i => i.id === id);
+    if (!integration || !integration.webhookUrl.trim()) {
+      toast({
+        title: "Erro",
+        description: "Configure o webhook URL primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setTestingIntegrations(prev => new Set([...prev, id]));
+
+    try {
+      const testPayload = {
+        test: true,
+        integration: integration.name,
+        timestamp: new Date().toISOString(),
+        source: "admin_panel",
+        data: {
+          message: "Teste de integração administrativa",
+          admin_test: true
+        }
+      };
+
+      const response = await fetch(integration.webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(integration.apiKey && { "Authorization": `Bearer ${integration.apiKey}` })
+        },
+        mode: "no-cors",
+        body: JSON.stringify(testPayload)
+      });
+
+      // Atualizar estatísticas da integração
+      const updatedIntegrations = integrations.map(int => 
+        int.id === id 
+          ? { 
+              ...int, 
+              lastTested: new Date().toISOString(),
+              testStatus: 'success' as const,
+              usageCount: int.usageCount + 1
+            }
+          : int
+      );
+      
+      setIntegrations(updatedIntegrations);
+      await saveIntegrations(updatedIntegrations);
+
+      toast({
+        title: "Teste Realizado",
+        description: `Webhook testado para ${integration.name}. Verifique o destino para confirmar.`,
+      });
+
+    } catch (error) {
+      console.error("Erro no teste:", error);
+      
+      const updatedIntegrations = integrations.map(int => 
+        int.id === id 
+          ? { 
+              ...int, 
+              lastTested: new Date().toISOString(),
+              testStatus: 'failed' as const
+            }
+          : int
+      );
+      
+      setIntegrations(updatedIntegrations);
+      await saveIntegrations(updatedIntegrations);
+
+      toast({
+        title: "Erro no Teste",
+        description: "Falha ao testar o webhook",
+        variant: "destructive"
+      });
+    } finally {
+      setTestingIntegrations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleAddNewIntegration = async (data: {
     name: string;
     description: string;
     category: string;
@@ -208,7 +345,10 @@ export const AdminIntegrations = () => {
       usageCount: 0
     };
 
-    setIntegrations(prev => [...prev, newIntegration]);
+    const updatedIntegrations = [...integrations, newIntegration];
+    setIntegrations(updatedIntegrations);
+    await saveIntegrations(updatedIntegrations);
+    
     setNewIntegrationDialog(false);
     
     toast({
@@ -217,12 +357,15 @@ export const AdminIntegrations = () => {
     });
   };
 
-  const handleDeleteIntegration = (id: string) => {
+  const handleDeleteIntegration = async (id: string) => {
     const integration = integrations.find(i => i.id === id);
     if (!integration) return;
 
-    if (confirm(`Deseja remover a integração ${integration.name}?`)) {
-      setIntegrations(prev => prev.filter(i => i.id !== id));
+    if (confirm(`Deseja realmente remover a integração ${integration.name}?`)) {
+      const updatedIntegrations = integrations.filter(i => i.id !== id);
+      setIntegrations(updatedIntegrations);
+      await saveIntegrations(updatedIntegrations);
+      
       toast({
         title: "Integração Removida",
         description: `${integration.name} foi removida`,
@@ -231,9 +374,47 @@ export const AdminIntegrations = () => {
     }
   };
 
+  const saveIntegrations = async (integrationsToSave: AdminIntegration[]) => {
+    try {
+      localStorage.setItem('admin_integrations_config', JSON.stringify(integrationsToSave));
+      
+      // Sincronizar com CRM
+      const activeIntegrations = integrationsToSave.filter(int => int.enabled && int.isGlobal);
+      const crmIntegrations = activeIntegrations.map(int => ({
+        id: int.id,
+        name: int.name,
+        description: int.description,
+        enabled: int.enabled,
+        webhookUrl: int.webhookUrl,
+        apiKey: int.apiKey,
+        category: int.category,
+        isFromAdmin: true
+      }));
+      
+      localStorage.setItem('admin_integrations', JSON.stringify(crmIntegrations));
+      
+      console.log('Integrações salvas e sincronizadas:', crmIntegrations);
+    } catch (error) {
+      console.error("Erro ao salvar integrações:", error);
+      throw error;
+    }
+  };
+
   const activeIntegrations = integrations.filter(i => i.enabled).length;
   const totalUsage = integrations.reduce((sum, i) => sum + i.usageCount, 0);
   const globalIntegrations = integrations.filter(i => i.isGlobal).length;
+  const successfulTests = integrations.filter(i => i.testStatus === 'success').length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando integrações...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -292,10 +473,10 @@ export const AdminIntegrations = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Globais</p>
-                <p className="text-2xl font-bold text-purple-600">{globalIntegrations}</p>
+                <p className="text-sm font-medium text-gray-600">Uso Total</p>
+                <p className="text-2xl font-bold text-orange-600">{totalUsage.toLocaleString()}</p>
               </div>
-              <Settings className="w-8 h-8 text-purple-500" />
+              <Webhook className="w-8 h-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
@@ -304,10 +485,10 @@ export const AdminIntegrations = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Uso Total</p>
-                <p className="text-2xl font-bold text-orange-600">{totalUsage.toLocaleString()}</p>
+                <p className="text-sm font-medium text-gray-600">Testadas</p>
+                <p className="text-2xl font-bold text-purple-600">{successfulTests}</p>
               </div>
-              <Webhook className="w-8 h-8 text-orange-500" />
+              <TestTube className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -337,17 +518,22 @@ export const AdminIntegrations = () => {
                       <Badge variant="outline">
                         {integration.category}
                       </Badge>
+                      {integration.testStatus && (
+                        <Badge className={integration.testStatus === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                          {integration.testStatus === 'success' ? 'Testada ✓' : 'Falha no teste'}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-gray-600 mb-3">{integration.description}</p>
                     
                     {editingIntegration === integration.id ? (
                       <div className="space-y-3">
                         <div>
-                          <Label>Webhook URL</Label>
+                          <Label>Webhook URL *</Label>
                           <Input
                             value={integration.webhookUrl}
                             onChange={(e) => handleUpdateIntegration(integration.id, 'webhookUrl', e.target.value)}
-                            placeholder="https://..."
+                            placeholder="https://hooks.zapier.com/hooks/catch/..."
                           />
                         </div>
                         <div>
@@ -358,6 +544,15 @@ export const AdminIntegrations = () => {
                             onChange={(e) => handleUpdateIntegration(integration.id, 'apiKey', e.target.value)}
                             placeholder="Chave de API"
                           />
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button onClick={() => handleSaveIntegration(integration.id)} size="sm">
+                            <Save className="w-4 h-4 mr-1" />
+                            Salvar
+                          </Button>
+                          <Button onClick={() => setEditingIntegration(null)} size="sm" variant="outline">
+                            Cancelar
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -375,10 +570,8 @@ export const AdminIntegrations = () => {
                           <p className="font-medium">{integration.usageCount.toLocaleString()}</p>
                         </div>
                         <div>
-                          <p className="text-gray-600">Status</p>
-                          <p className={`font-medium ${integration.enabled ? 'text-green-600' : 'text-gray-600'}`}>
-                            {integration.enabled ? 'Funcionando' : 'Desabilitada'}
-                          </p>
+                          <p className="text-gray-600">Último teste</p>
+                          <p className="font-medium">{integration.lastTested ? new Date(integration.lastTested).toLocaleDateString() : 'Nunca'}</p>
                         </div>
                       </div>
                     )}
@@ -390,12 +583,17 @@ export const AdminIntegrations = () => {
                     checked={integration.enabled}
                     onCheckedChange={() => handleToggleIntegration(integration.id)}
                   />
-                  {editingIntegration === integration.id ? (
-                    <Button onClick={() => handleSaveIntegration(integration.id)} size="sm">
-                      Salvar
-                    </Button>
-                  ) : (
+                  {editingIntegration === integration.id ? null : (
                     <>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleTestIntegration(integration.id)}
+                        disabled={testingIntegrations.has(integration.id) || !integration.webhookUrl}
+                      >
+                        <TestTube className="w-4 h-4" />
+                        {testingIntegrations.has(integration.id) ? "Testando..." : "Testar"}
+                      </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -418,6 +616,22 @@ export const AdminIntegrations = () => {
           </Card>
         ))}
       </div>
+
+      {integrations.length === 0 && (
+        <div className="text-center py-12">
+          <Globe className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhuma integração configurada
+          </h3>
+          <p className="text-gray-500 mb-4">
+            Adicione sua primeira integração administrativa
+          </p>
+          <Button onClick={() => setNewIntegrationDialog(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar Integração
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
@@ -427,22 +641,38 @@ const NewIntegrationForm = ({ onSubmit }: { onSubmit: (data: any) => void }) => 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: 'Personalizada',
+    category: '',
     webhookUrl: '',
     apiKey: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const categories = [
+    'Automação',
+    'Comunicação',
+    'E-mail',
+    'Calendário',
+    'Analytics',
+    'Personalizada'
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.webhookUrl.trim()) return;
-    onSubmit(formData);
-    setFormData({ name: '', description: '', category: 'Personalizada', webhookUrl: '', apiKey: '' });
+    if (!formData.name.trim() || !formData.category) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+      setFormData({ name: '', description: '', category: '', webhookUrl: '', apiKey: '' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label>Nome da Integração</Label>
+        <Label>Nome da Integração *</Label>
         <Input
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -459,12 +689,19 @@ const NewIntegrationForm = ({ onSubmit }: { onSubmit: (data: any) => void }) => 
         />
       </div>
       <div>
-        <Label>Categoria</Label>
-        <Input
-          value={formData.category}
-          onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-          placeholder="Ex: API, Webhook, Automação"
-        />
+        <Label>Categoria *</Label>
+        <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione uma categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label>Webhook URL</Label>
@@ -472,7 +709,6 @@ const NewIntegrationForm = ({ onSubmit }: { onSubmit: (data: any) => void }) => 
           value={formData.webhookUrl}
           onChange={(e) => setFormData(prev => ({ ...prev, webhookUrl: e.target.value }))}
           placeholder="https://api.exemplo.com/webhook"
-          required
         />
       </div>
       <div>
@@ -484,8 +720,8 @@ const NewIntegrationForm = ({ onSubmit }: { onSubmit: (data: any) => void }) => 
           placeholder="Chave de API se necessária"
         />
       </div>
-      <Button type="submit" className="w-full">
-        Criar Integração
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Criando..." : "Criar Integração"}
       </Button>
     </form>
   );

@@ -1,15 +1,7 @@
 
 import { openWhatsApp, whatsappTemplates } from './whatsappUtils';
 import { openEmailClient, emailTemplates } from './emailUtils';
-
-// Mock de contatos para demonstração
-const mockContacts = [
-  { id: 1, name: "João Silva", email: "joao@email.com", phone: "11999887766", type: "lead" },
-  { id: 2, name: "Maria Santos", email: "maria@email.com", phone: "11988776655", type: "customer" },
-  { id: 3, name: "Pedro Costa", email: "pedro@email.com", phone: "11977665544", type: "prospect" },
-  { id: 4, name: "Ana Lima", email: "ana@email.com", phone: "11966554433", type: "lead" },
-  { id: 5, name: "Carlos Oliveira", email: "carlos@email.com", phone: "11955443322", type: "customer" }
-];
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExecutionResult {
   success: boolean;
@@ -17,60 +9,132 @@ interface ExecutionResult {
   details: string[];
 }
 
+interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  whatsapp?: string;
+  type: string;
+  company?: string;
+}
+
 export const executeAutomation = async (automation: any): Promise<ExecutionResult> => {
-  console.log("Executando automação:", automation.name);
+  console.log("🚀 Executando automação:", automation.name);
   
-  // Filtrar contatos com base no grupo alvo
-  const targetContacts = getTargetContacts(automation.targetGroup);
-  
-  if (targetContacts.length === 0) {
+  try {
+    // Buscar contatos reais do banco de dados
+    const targetContacts = await getTargetContactsFromDB(automation.targetGroup);
+    
+    if (targetContacts.length === 0) {
+      return {
+        success: false,
+        contactsReached: 0,
+        details: ["Nenhum contato encontrado para o grupo alvo selecionado"]
+      };
+    }
+
+    const results: string[] = [];
+    let successCount = 0;
+
+    console.log(`📊 Processando ${targetContacts.length} contatos para automação`);
+
+    // Executar ação para cada contato
+    for (const contact of targetContacts) {
+      try {
+        await executeAutomationAction(automation, contact);
+        successCount++;
+        results.push(`✅ ${contact.name} - ${automation.action} executada com sucesso`);
+        
+        // Registrar no banco de dados
+        await logAutomationExecution(automation.id, contact.id, 'success');
+        
+      } catch (error) {
+        console.error(`❌ Erro para ${contact.name}:`, error);
+        results.push(`❌ ${contact.name} - Erro: ${error}`);
+        
+        // Registrar erro no banco
+        await logAutomationExecution(automation.id, contact.id, 'failed', String(error));
+      }
+      
+      // Delay entre execuções para evitar spam
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    // Atualizar estatísticas da automação
+    await updateAutomationStats(automation.id, successCount);
+
+    console.log(`✅ Automação concluída: ${successCount}/${targetContacts.length} sucessos`);
+
+    return {
+      success: successCount > 0,
+      contactsReached: successCount,
+      details: results
+    };
+
+  } catch (error) {
+    console.error("💥 Erro crítico na automação:", error);
     return {
       success: false,
       contactsReached: 0,
-      details: ["Nenhum contato encontrado para o grupo alvo selecionado"]
+      details: [`Erro crítico: ${error}`]
     };
   }
+};
 
-  const results: string[] = [];
-  let successCount = 0;
-
-  // Executar ação para cada contato
-  for (const contact of targetContacts) {
-    try {
-      await executeAutomationAction(automation, contact);
-      successCount++;
-      results.push(`✅ ${contact.name} - ${automation.action} executada com sucesso`);
-    } catch (error) {
-      results.push(`❌ ${contact.name} - Erro: ${error}`);
-    }
+const getTargetContactsFromDB = async (targetGroup: string): Promise<Contact[]> => {
+  try {
+    console.log(`🔍 Buscando contatos do grupo: ${targetGroup}`);
     
-    // Pequeno delay entre execuções para evitar spam
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
+    let query = supabase.from('leads').select('*');
+    
+    // Filtrar por tipo de lead baseado no grupo alvo
+    switch (targetGroup) {
+      case "leads":
+        query = query.eq('status', 'Novo');
+        break;
+      case "customers":
+        query = query.eq('status', 'Cliente');
+        break;
+      case "prospects":
+        query = query.in('status', ['Qualificado', 'Negociação']);
+        break;
+      case "all":
+      default:
+        // Buscar todos
+        break;
+    }
 
-  return {
-    success: successCount > 0,
-    contactsReached: successCount,
-    details: results
-  };
+    const { data: leads, error } = await query.limit(50); // Limitar para evitar spam
+    
+    if (error) {
+      console.error("Erro ao buscar leads:", error);
+      return [];
+    }
+
+    const contacts: Contact[] = (leads || []).map(lead => ({
+      id: lead.id,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone || undefined,
+      whatsapp: lead.whatsapp || undefined,
+      type: lead.status || 'lead',
+      company: lead.company || undefined
+    }));
+
+    console.log(`📈 Encontrados ${contacts.length} contatos`);
+    return contacts;
+
+  } catch (error) {
+    console.error("Erro ao buscar contatos:", error);
+    return [];
+  }
 };
 
-const getTargetContacts = (targetGroup: string) => {
-  switch (targetGroup) {
-    case "leads":
-      return mockContacts.filter(c => c.type === "lead");
-    case "customers":
-      return mockContacts.filter(c => c.type === "customer");
-    case "prospects":
-      return mockContacts.filter(c => c.type === "prospect");
-    case "all":
-    default:
-      return mockContacts;
-  }
-};
-
-const executeAutomationAction = async (automation: any, contact: any) => {
+const executeAutomationAction = async (automation: any, contact: Contact) => {
   const { actionType, message, webhookUrl } = automation;
+
+  console.log(`🎯 Executando ${actionType} para ${contact.name}`);
 
   switch (actionType) {
     case "send_whatsapp":
@@ -78,7 +142,7 @@ const executeAutomationAction = async (automation: any, contact: any) => {
       break;
     
     case "send_email":
-      await sendEmail(contact, message);
+      await sendEmailMessage(contact, message);
       break;
     
     case "schedule_meeting":
@@ -110,159 +174,293 @@ const executeAutomationAction = async (automation: any, contact: any) => {
   }
 };
 
-const sendWhatsAppMessage = async (contact: any, message: string) => {
-  console.log(`Enviando WhatsApp para ${contact.name} (${contact.phone}): ${message}`);
+const sendWhatsAppMessage = async (contact: Contact, message: string) => {
+  console.log(`📱 Enviando WhatsApp para ${contact.name}`);
   
-  await new Promise(resolve => setTimeout(resolve, 500));
+  if (!contact.whatsapp && !contact.phone) {
+    throw new Error("Contato não possui WhatsApp ou telefone");
+  }
+
+  const phoneNumber = contact.whatsapp || contact.phone;
   
-  if (window.confirm(`Abrir WhatsApp para ${contact.name}?\nMensagem: ${message}`)) {
-    openWhatsApp(contact.phone, message);
+  // Simular envio (abrir WhatsApp Web)
+  const finalMessage = message.replace(/\{nome\}/g, contact.name).replace(/\{empresa\}/g, contact.company || 'sua empresa');
+  
+  console.log(`💬 Mensagem para ${contact.name}: ${finalMessage}`);
+  
+  // Em produção, aqui integraria com API do WhatsApp Business
+  // Por enquanto, abre o WhatsApp Web
+  openWhatsApp(phoneNumber!, finalMessage);
+  
+  // Simular delay de envio
+  await new Promise(resolve => setTimeout(resolve, 1000));
+};
+
+const sendEmailMessage = async (contact: Contact, message: string) => {
+  console.log(`📧 Enviando email para ${contact.name} (${contact.email})`);
+  
+  const subject = `Automação - Contato via CRM`;
+  const body = message || `Olá ${contact.name},\n\nEsta é mensagem automática do sistema.\n\nAtenciosamente,\nEquipe CRM`;
+  
+  const finalBody = body.replace(/\{nome\}/g, contact.name).replace(/\{empresa\}/g, contact.company || 'sua empresa');
+  
+  console.log(`📨 Email para ${contact.name}: ${subject}`);
+  
+  // Em produção, aqui integraria com serviço de email (SendGrid, etc)
+  // Por enquanto, abre o cliente de email
+  openEmailClient(contact.email, subject, finalBody);
+  
+  // Simular delay de envio
+  await new Promise(resolve => setTimeout(resolve, 1000));
+};
+
+const scheduleMeeting = async (contact: Contact) => {
+  console.log(`📅 Agendando reunião com ${contact.name}`);
+  
+  // Criar evento no banco de dados
+  try {
+    const { error } = await supabase.from('events').insert({
+      title: `Reunião Automática - ${contact.name}`,
+      description: `Reunião agendada automaticamente pela automação`,
+      start_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias
+      end_time: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(), // 1 hora
+      type: 'Reunião',
+      status: 'Agendado',
+      lead_id: contact.id
+    });
+
+    if (error) throw error;
+    
+    console.log(`✅ Reunião agendada para ${contact.name}`);
+  } catch (error) {
+    console.error("Erro ao agendar reunião:", error);
+    throw new Error("Falha ao agendar reunião");
   }
 };
 
-const sendEmail = async (contact: any, message: string) => {
-  console.log(`Enviando email para ${contact.name} (${contact.email}): ${message}`);
+const assignUser = async (contact: Contact) => {
+  console.log(`👤 Atribuindo usuário para ${contact.name}`);
+  
+  // Aqui você pode implementar lógica de atribuição automática
+  // Por exemplo, round-robin entre usuários ativos
   
   await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const subject = `Automação - Contato via Salesin Pro`;
-  const body = message || `Olá ${contact.name},\n\nEsta é uma mensagem automática do sistema Salesin Pro.\n\nAtenciosamente,\nEquipe Salesin Pro`;
-  
-  if (window.confirm(`Abrir cliente de email para ${contact.name}?\nAssunto: ${subject}`)) {
-    openEmailClient(contact.email, subject, body);
+  console.log(`✅ ${contact.name} foi atribuído automaticamente`);
+};
+
+const triggerZapierWebhook = async (contact: Contact, webhookUrl?: string) => {
+  if (!webhookUrl) {
+    // Tentar pegar webhook das integrações administrativas
+    const adminIntegrations = localStorage.getItem('admin_integrations');
+    if (adminIntegrations) {
+      const integrations = JSON.parse(adminIntegrations);
+      const zapierIntegration = integrations.find((int: any) => int.id.includes('zapier'));
+      if (zapierIntegration?.webhookUrl) {
+        webhookUrl = zapierIntegration.webhookUrl;
+      }
+    }
   }
-};
 
-const scheduleMeeting = async (contact: any) => {
-  console.log(`Agendando reunião com ${contact.name}`);
-  await new Promise(resolve => setTimeout(resolve, 500));
-  alert(`Reunião agendada com ${contact.name} para próxima semana!`);
-};
-
-const assignUser = async (contact: any) => {
-  console.log(`Atribuindo usuário para ${contact.name}`);
-  await new Promise(resolve => setTimeout(resolve, 500));
-  alert(`${contact.name} foi atribuído ao usuário responsável!`);
-};
-
-const triggerZapierWebhook = async (contact: any, webhookUrl?: string) => {
   if (!webhookUrl) {
     throw new Error("URL do webhook Zapier não configurada");
   }
 
-  console.log(`Disparando Zapier webhook para ${contact.name}`);
+  console.log(`🔗 Disparando Zapier webhook para ${contact.name}`);
   
   try {
+    const payload = {
+      contact: {
+        id: contact.id,
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        whatsapp: contact.whatsapp,
+        company: contact.company,
+        type: contact.type
+      },
+      timestamp: new Date().toISOString(),
+      source: "CRM_Automation",
+      platform: "Zapier",
+      automation_triggered: true
+    };
+
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       mode: "no-cors",
-      body: JSON.stringify({
-        contact: contact,
-        timestamp: new Date().toISOString(),
-        source: "Salesin Pro",
-        platform: "Zapier"
-      }),
+      body: JSON.stringify(payload),
     });
     
-    console.log(`Zapier webhook enviado para ${contact.name}`);
+    console.log(`✅ Zapier webhook enviado para ${contact.name}`);
+    
   } catch (error) {
+    console.error("Erro no Zapier webhook:", error);
     throw new Error(`Erro ao disparar Zapier webhook: ${error}`);
   }
 };
 
-const triggerMakeWebhook = async (contact: any, webhookUrl?: string) => {
+const triggerMakeWebhook = async (contact: Contact, webhookUrl?: string) => {
+  if (!webhookUrl) {
+    const adminIntegrations = localStorage.getItem('admin_integrations');
+    if (adminIntegrations) {
+      const integrations = JSON.parse(adminIntegrations);
+      const makeIntegration = integrations.find((int: any) => int.id.includes('make'));
+      if (makeIntegration?.webhookUrl) {
+        webhookUrl = makeIntegration.webhookUrl;
+      }
+    }
+  }
+
   if (!webhookUrl) {
     throw new Error("URL do webhook Make.com não configurada");
   }
 
-  console.log(`Disparando Make.com webhook para ${contact.name}`);
+  console.log(`🔧 Disparando Make.com webhook para ${contact.name}`);
   
   try {
-    const response = await fetch(webhookUrl, {
+    const payload = {
+      contact: contact,
+      timestamp: new Date().toISOString(),
+      source: "CRM_Automation",
+      platform: "Make.com",
+      automation_triggered: true
+    };
+
+    await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       mode: "no-cors",
-      body: JSON.stringify({
-        contact: contact,
-        timestamp: new Date().toISOString(),
-        source: "Salesin Pro",
-        platform: "Make.com"
-      }),
+      body: JSON.stringify(payload),
     });
     
-    console.log(`Make.com webhook enviado para ${contact.name}`);
+    console.log(`✅ Make.com webhook enviado para ${contact.name}`);
+    
   } catch (error) {
+    console.error("Erro no Make.com webhook:", error);
     throw new Error(`Erro ao disparar Make.com webhook: ${error}`);
   }
 };
 
-const triggerN8nWebhook = async (contact: any, webhookUrl?: string) => {
+const triggerN8nWebhook = async (contact: Contact, webhookUrl?: string) => {
   if (!webhookUrl) {
     throw new Error("URL do webhook n8n não configurada");
   }
 
-  console.log(`Disparando n8n webhook para ${contact.name}`);
+  console.log(`⚡ Disparando n8n webhook para ${contact.name}`);
   
   try {
-    const response = await fetch(webhookUrl, {
+    const payload = {
+      contact: contact,
+      timestamp: new Date().toISOString(),
+      source: "CRM_Automation",
+      platform: "n8n",
+      automation_triggered: true
+    };
+
+    await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       mode: "no-cors",
-      body: JSON.stringify({
-        contact: contact,
-        timestamp: new Date().toISOString(),
-        source: "Salesin Pro",
-        platform: "n8n"
-      }),
+      body: JSON.stringify(payload),
     });
     
-    console.log(`n8n webhook enviado para ${contact.name}`);
+    console.log(`✅ n8n webhook enviado para ${contact.name}`);
+    
   } catch (error) {
+    console.error("Erro no n8n webhook:", error);
     throw new Error(`Erro ao disparar n8n webhook: ${error}`);
   }
 };
 
-const triggerPabblyWebhook = async (contact: any, webhookUrl?: string) => {
+const triggerPabblyWebhook = async (contact: Contact, webhookUrl?: string) => {
   if (!webhookUrl) {
     throw new Error("URL do webhook Pabbly não configurada");
   }
 
-  console.log(`Disparando Pabbly webhook para ${contact.name}`);
+  console.log(`🔄 Disparando Pabbly webhook para ${contact.name}`);
   
   try {
-    const response = await fetch(webhookUrl, {
+    const payload = {
+      contact: contact,
+      timestamp: new Date().toISOString(),
+      source: "CRM_Automation",
+      platform: "Pabbly",
+      automation_triggered: true
+    };
+
+    await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       mode: "no-cors",
-      body: JSON.stringify({
-        contact: contact,
-        timestamp: new Date().toISOString(),
-        source: "Salesin Pro",
-        platform: "Pabbly"
-      }),
+      body: JSON.stringify(payload),
     });
     
-    console.log(`Pabbly webhook enviado para ${contact.name}`);
+    console.log(`✅ Pabbly webhook enviado para ${contact.name}`);
+    
   } catch (error) {
+    console.error("Erro no Pabbly webhook:", error);
     throw new Error(`Erro ao disparar Pabbly webhook: ${error}`);
   }
 };
 
+const logAutomationExecution = async (automationId: string, contactId: string, status: 'success' | 'failed', error?: string) => {
+  try {
+    // Registrar log da execução
+    const logEntry = {
+      automation_id: automationId,
+      contact_id: contactId,
+      status: status,
+      executed_at: new Date().toISOString(),
+      error_message: error
+    };
+
+    console.log(`📝 Registrando log de automação:`, logEntry);
+    
+    // Salvar no localStorage por enquanto (em produção seria no banco)
+    const logs = JSON.parse(localStorage.getItem('automation_logs') || '[]');
+    logs.push(logEntry);
+    localStorage.setItem('automation_logs', JSON.stringify(logs));
+    
+  } catch (error) {
+    console.error("Erro ao registrar log:", error);
+  }
+};
+
+const updateAutomationStats = async (automationId: string, successCount: number) => {
+  try {
+    // Atualizar estatísticas da automação no banco
+    const { error } = await supabase
+      .from('automations')
+      .update({ 
+        executions: supabase.sql`executions + ${successCount}`,
+        last_run: new Date().toISOString()
+      })
+      .eq('id', automationId);
+
+    if (error) {
+      console.error("Erro ao atualizar stats:", error);
+    } else {
+      console.log(`📊 Estatísticas atualizadas para automação ${automationId}`);
+    }
+  } catch (error) {
+    console.error("Erro ao atualizar estatísticas:", error);
+  }
+};
+
 export const validateAutomationTrigger = (triggerType: string, data?: any): boolean => {
-  console.log(`Validando gatilho: ${triggerType}`, data);
+  console.log(`🔍 Validando gatilho: ${triggerType}`, data);
   
   switch (triggerType) {
     case "new_lead":
-      return data?.type === "lead";
+      return data?.type === "lead" || data?.status === "Novo";
     
     case "email_opened":
       return data?.emailOpened === true;
@@ -277,3 +475,45 @@ export const validateAutomationTrigger = (triggerType: string, data?: any): bool
       return false;
   }
 };
+
+// Função para executar automações baseadas em tempo
+export const executeTimeBasedAutomations = async () => {
+  console.log("⏰ Executando automações baseadas em tempo...");
+  
+  try {
+    // Buscar automações ativas baseadas em tempo
+    const { data: automations, error } = await supabase
+      .from('automations')
+      .select('*')
+      .eq('status', 'Ativo')
+      .eq('trigger_type', 'time_based');
+
+    if (error) {
+      console.error("Erro ao buscar automações:", error);
+      return;
+    }
+
+    for (const automation of automations || []) {
+      // Verificar se é hora de executar (baseado no delay)
+      const lastRun = automation.last_run ? new Date(automation.last_run) : null;
+      const now = new Date();
+      const delayMinutes = automation.delay_minutes || 1440; // 24h por padrão
+      
+      if (!lastRun || (now.getTime() - lastRun.getTime()) >= (delayMinutes * 60 * 1000)) {
+        console.log(`⏰ Executando automação baseada em tempo: ${automation.name}`);
+        await executeAutomation(automation);
+      }
+    }
+  } catch (error) {
+    console.error("Erro nas automações baseadas em tempo:", error);
+  }
+};
+
+// Inicializar execução automática de automações temporais
+if (typeof window !== 'undefined') {
+  // Executar a cada 5 minutos
+  setInterval(executeTimeBasedAutomations, 5 * 60 * 1000);
+  
+  // Executar uma vez ao carregar
+  setTimeout(executeTimeBasedAutomations, 5000);
+}
