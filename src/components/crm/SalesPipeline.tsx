@@ -1,9 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Calendar, User, Plus, MoreHorizontal } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { NewDealDialog } from "./NewDealDialog";
 
 const pipelineStages = [
   { id: "qualification", name: "Qualificação", color: "bg-blue-500" },
@@ -60,7 +62,24 @@ const mockDeals = [
 ];
 
 export const SalesPipeline = () => {
-  const [deals] = useState(mockDeals);
+  const [deals, setDeals] = useState(mockDeals);
+  const { t } = useLanguage();
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes to force re-render
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, []);
+
+  const handleCreateDeal = (newDeal: any) => {
+    setDeals(prev => [...prev, newDeal]);
+    console.log("Negócio adicionado ao pipeline:", newDeal);
+  };
 
   const getDealsByStage = (stageId: string) => {
     return deals.filter(deal => deal.stage === stageId);
@@ -68,6 +87,16 @@ export const SalesPipeline = () => {
 
   const getStageTotal = (stageId: string) => {
     return getDealsByStage(stageId).reduce((sum, deal) => sum + deal.value, 0);
+  };
+
+  const getStageName = (stageId: string) => {
+    switch(stageId) {
+      case 'qualification': return t('qualification');
+      case 'proposal': return t('proposal');
+      case 'negotiation': return t('negotiation');
+      case 'closing': return t('closing');
+      default: return stageId;
+    }
   };
 
   return (
@@ -84,10 +113,10 @@ export const SalesPipeline = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className={`w-3 h-3 rounded-full ${stage.color}`}></div>
                   <span className="text-sm font-medium text-gray-500">
-                    {stageDeals.length} negócios
+                    {stageDeals.length} {t('deals')}
                   </span>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{stage.name}</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">{getStageName(stage.id)}</h3>
                 <p className="text-2xl font-bold text-gray-900">
                   R$ {stageTotal.toLocaleString()}
                 </p>
@@ -108,13 +137,14 @@ export const SalesPipeline = () => {
                 <div className="flex items-center space-x-2">
                   <div className={`w-3 h-3 rounded-full ${stage.color}`}></div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {stage.name}
+                    {getStageName(stage.id)}
                   </h3>
                   <Badge variant="secondary">{stageDeals.length}</Badge>
                 </div>
-                <Button size="sm" variant="ghost">
-                  <Plus className="w-4 h-4" />
-                </Button>
+                <NewDealDialog 
+                  stage={stage.id}
+                  onCreateDeal={handleCreateDeal}
+                />
               </div>
 
               <div className="space-y-3">
@@ -174,12 +204,20 @@ export const SalesPipeline = () => {
                       <DollarSign className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Nenhum negócio nesta etapa
+                      {t('noDealsinStage')}
                     </p>
-                    <Button size="sm" variant="ghost" className="mt-2">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Adicionar
-                    </Button>
+                    <div className="mt-2">
+                      <NewDealDialog 
+                        stage={stage.id}
+                        onCreateDeal={handleCreateDeal}
+                        trigger={
+                          <Button size="sm" variant="ghost">
+                            <Plus className="w-4 h-4 mr-1" />
+                            {t('add')}
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -192,42 +230,42 @@ export const SalesPipeline = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Valor Total do Pipeline</CardTitle>
+            <CardTitle>{t('totalPipelineValue')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               R$ {deals.reduce((sum, deal) => sum + deal.value, 0).toLocaleString()}
             </div>
             <p className="text-sm text-gray-500">
-              {deals.length} negócios ativos
+              {deals.length} {t('activeDeals')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Probabilidade Média</CardTitle>
+            <CardTitle>{t('averageProbability')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {Math.round(deals.reduce((sum, deal) => sum + deal.probability, 0) / deals.length)}%
             </div>
             <p className="text-sm text-gray-500">
-              Baseado em {deals.length} negócios
+              {t('basedOnDeals')} {deals.length} {t('deals')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Receita Projetada</CardTitle>
+            <CardTitle>{t('projectedRevenue')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-600 mb-2">
               R$ {Math.round(deals.reduce((sum, deal) => sum + (deal.value * deal.probability / 100), 0)).toLocaleString()}
             </div>
             <p className="text-sm text-gray-500">
-              Com base na probabilidade
+              {t('basedOnProbability')}
             </p>
           </CardContent>
         </Card>
