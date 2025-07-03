@@ -16,6 +16,8 @@ import {
   Calendar,
   DollarSign
 } from "lucide-react";
+import { NewProposalDialog } from "./NewProposalDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const mockProposals = [
   {
@@ -62,33 +64,85 @@ const statusColors: Record<string, string> = {
 };
 
 export const ProposalsManager = () => {
-  const [proposals] = useState(mockProposals);
+  const [proposals, setProposals] = useState(mockProposals);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const { toast } = useToast();
 
-  const handleNewProposal = () => {
-    console.log("Criando nova proposta...");
+  const handleCreateProposal = (newProposal: any) => {
+    setProposals(prev => [...prev, newProposal]);
+    console.log("Proposta adicionada:", newProposal);
   };
 
   const handleViewProposal = (proposalId: number) => {
-    console.log(`Visualizando proposta ${proposalId}...`);
+    const proposal = proposals.find(p => p.id === proposalId);
+    console.log(`Visualizando proposta ${proposalId}:`, proposal);
+    toast({
+      title: "Proposta Visualizada",
+      description: `Abrindo visualização da proposta ${proposal?.title}`,
+    });
   };
 
   const handleEditProposal = (proposalId: number) => {
-    console.log(`Editando proposta ${proposalId}...`);
+    const proposal = proposals.find(p => p.id === proposalId);
+    console.log(`Editando proposta ${proposalId}:`, proposal);
+    toast({
+      title: "Editar Proposta",
+      description: `Abrindo editor para ${proposal?.title}`,
+    });
   };
 
   const handleSendProposal = (proposalId: number) => {
-    console.log(`Enviando proposta ${proposalId}...`);
+    const proposal = proposals.find(p => p.id === proposalId);
+    if (proposal) {
+      // Atualizar status para "Enviada"
+      setProposals(prev => prev.map(p => 
+        p.id === proposalId ? { ...p, status: "Enviada" } : p
+      ));
+      
+      console.log(`Enviando proposta ${proposalId}:`, proposal);
+      toast({
+        title: "Proposta Enviada",
+        description: `${proposal.title} foi enviada com sucesso`,
+      });
+    }
   };
 
   const handleDownloadProposal = (proposalId: number) => {
-    console.log(`Baixando proposta ${proposalId}...`);
+    const proposal = proposals.find(p => p.id === proposalId);
+    console.log(`Baixando PDF da proposta ${proposalId}:`, proposal);
+    toast({
+      title: "Download Iniciado",
+      description: `Gerando PDF de ${proposal?.title}`,
+    });
+    
+    // Simular download
+    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = '#';
+      link.download = `proposta-${proposalId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }, 1000);
   };
 
-  const filteredProposals = proposals.filter(proposal =>
-    proposal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    proposal.client.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleFilterChange = () => {
+    console.log("Abrindo filtros avançados...");
+    toast({
+      title: "Filtros",
+      description: "Funcionalidade de filtros será implementada em breve",
+    });
+  };
+
+  const filteredProposals = proposals.filter(proposal => {
+    const matchesSearch = proposal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         proposal.client.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || proposal.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -98,10 +152,7 @@ export const ProposalsManager = () => {
           <h1 className="text-2xl font-bold text-gray-900">Propostas</h1>
           <p className="text-gray-600">Gerencie suas propostas comerciais</p>
         </div>
-        <Button onClick={handleNewProposal} className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Proposta
-        </Button>
+        <NewProposalDialog onCreateProposal={handleCreateProposal} />
       </div>
 
       {/* Stats */}
@@ -141,7 +192,7 @@ export const ProposalsManager = () => {
                   {proposals.filter(p => p.status === "Aceita").length}
                 </p>
               </div>
-              <Badge className="w-8 h-8 text-green-500" />
+              <Calendar className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -172,7 +223,39 @@ export const ProposalsManager = () => {
             className="pl-10"
           />
         </div>
-        <Button variant="outline">
+        
+        <div className="flex space-x-2">
+          <Button
+            variant={statusFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("all")}
+          >
+            Todas
+          </Button>
+          <Button
+            variant={statusFilter === "Rascunho" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("Rascunho")}
+          >
+            Rascunhos
+          </Button>
+          <Button
+            variant={statusFilter === "Enviada" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("Enviada")}
+          >
+            Enviadas
+          </Button>
+          <Button
+            variant={statusFilter === "Aceita" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("Aceita")}
+          >
+            Aceitas
+          </Button>
+        </div>
+        
+        <Button variant="outline" onClick={handleFilterChange}>
           <Filter className="w-4 h-4 mr-2" />
           Filtros
         </Button>
@@ -226,7 +309,12 @@ export const ProposalsManager = () => {
                         <Edit className="w-4 h-4 mr-1" />
                         Editar
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleSendProposal(proposal.id)}>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleSendProposal(proposal.id)}
+                        disabled={proposal.status === "Aceita"}
+                      >
                         <Send className="w-4 h-4 mr-1" />
                         Enviar
                       </Button>
@@ -242,6 +330,32 @@ export const ProposalsManager = () => {
           </Card>
         ))}
       </div>
+
+      {filteredProposals.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FileText className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhuma proposta encontrada
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm || statusFilter !== "all" 
+              ? "Tente ajustar os filtros de busca"
+              : "Comece criando sua primeira proposta"
+            }
+          </p>
+          <NewProposalDialog 
+            onCreateProposal={handleCreateProposal}
+            trigger={
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Proposta
+              </Button>
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };
