@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { openWhatsApp, whatsappTemplates } from "@/utils/whatsappUtils";
+import { useToast } from "@/hooks/use-toast";
+import { NewUserDialog } from "./NewUserDialog";
+import { ViewUserDialog } from "./ViewUserDialog";
+import { EditUserDialog } from "./EditUserDialog";
 
 const mockAdminUsers = [
   {
@@ -73,44 +77,93 @@ const mockAdminUsers = [
 ];
 
 export const AdminUserManagement = () => {
-  const [users] = useState(mockAdminUsers);
+  const [users, setUsers] = useState(mockAdminUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
+  
+  // Dialog states
+  const [newUserDialog, setNewUserDialog] = useState(false);
+  const [viewUserDialog, setViewUserDialog] = useState<{ open: boolean; user: any }>({ open: false, user: null });
+  const [editUserDialog, setEditUserDialog] = useState<{ open: boolean; user: any }>({ open: false, user: null });
+  
+  const { toast } = useToast();
 
   // Handlers para os botões
   const handleNewUser = () => {
-    console.log('Criando novo usuário...');
-    alert('Funcionalidade de criar novo usuário será implementada em breve');
+    setNewUserDialog(true);
+  };
+
+  const handleUserCreated = (newUser: any) => {
+    setUsers(prev => [...prev, newUser]);
   };
 
   const handleViewUser = (userId: number) => {
     const user = users.find(u => u.id === userId);
-    console.log('Visualizando usuário:', userId, user);
-    alert(`Visualizando detalhes do usuário ${user?.name} (ID: ${userId})`);
+    if (user) {
+      setViewUserDialog({ open: true, user });
+    }
   };
 
   const handleEditUser = (userId: number) => {
     const user = users.find(u => u.id === userId);
-    console.log('Editando usuário:', userId, user);
-    alert(`Editando usuário ${user?.name} (ID: ${userId})`);
+    if (user) {
+      setEditUserDialog({ open: true, user });
+    }
+  };
+
+  const handleUserUpdated = (updatedUser: any) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
   };
 
   const handleSendEmail = (userId: number, userEmail: string) => {
     console.log('Enviando email para:', userEmail);
-    alert(`Enviando email para ${userEmail}`);
+    
+    const subject = encodeURIComponent('Contato do Sistema CRM');
+    const body = encodeURIComponent('Olá! Estamos entrando em contato através do nosso sistema CRM.');
+    const mailtoLink = `mailto:${userEmail}?subject=${subject}&body=${body}`;
+    
+    window.open(mailtoLink, '_blank');
+    
+    toast({
+      title: "Email",
+      description: `Cliente de email aberto para ${userEmail}`
+    });
   };
 
   const handleWhatsApp = (userId: number, userWhatsApp: string, userName: string) => {
     console.log('Enviando WhatsApp para:', userWhatsApp);
+    
+    if (!userWhatsApp) {
+      toast({
+        title: "Erro",
+        description: "Número do WhatsApp não informado",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const message = whatsappTemplates.leadContact(userName);
     openWhatsApp(userWhatsApp, message);
+    
+    toast({
+      title: "WhatsApp",
+      description: `Mensagem enviada para ${userName}`
+    });
   };
 
   const handleDeleteUser = (userId: number, userName: string) => {
     console.log('Deletando usuário:', userId);
-    if (confirm(`Tem certeza que deseja excluir o usuário ${userName}?`)) {
-      alert(`Usuário ${userName} seria excluído (funcionalidade será implementada)`);
+    
+    const confirmDelete = window.confirm(`Tem certeza que deseja excluir o usuário ${userName}?`);
+    
+    if (confirmDelete) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      
+      toast({
+        title: "Usuário Excluído",
+        description: `${userName} foi removido do sistema`
+      });
     }
   };
 
@@ -358,6 +411,26 @@ export const AdminUserManagement = () => {
           </p>
         </div>
       )}
+
+      {/* Dialogs */}
+      <NewUserDialog
+        open={newUserDialog}
+        onOpenChange={setNewUserDialog}
+        onUserCreated={handleUserCreated}
+      />
+      
+      <ViewUserDialog
+        open={viewUserDialog.open}
+        onOpenChange={(open) => setViewUserDialog({ open, user: null })}
+        user={viewUserDialog.user}
+      />
+      
+      <EditUserDialog
+        open={editUserDialog.open}
+        onOpenChange={(open) => setEditUserDialog({ open, user: null })}
+        user={editUserDialog.user}
+        onUserUpdated={handleUserUpdated}
+      />
     </div>
   );
 };
